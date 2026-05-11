@@ -3,5 +3,5 @@ export default function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="min-h-screen bg-zinc-950 text-zinc-100">{children}</div>;
+  return <div className="min-h-[calc(100vh-3.5rem)]">{children}</div>;
 }
