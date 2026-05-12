@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import type { Company } from "@/types/company";
 import { companyInitials, formatCompanySize } from "@/lib/company-display";
+import { companySlug } from "@/lib/company-slug";
 import { cn } from "@/lib/utils";
 
 interface CompaniesTableProps {
@@ -36,15 +38,18 @@ export function CompaniesTable({ companies, className }: CompaniesTableProps) {
                 className="border-b border-zinc-800/60 transition-colors duration-150 last:border-0 hover:bg-zinc-800/40"
               >
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
+                  <Link
+                    href={`/company/${companySlug(row.name)}`}
+                    className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                  >
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-xs font-semibold text-zinc-300">
                       {companyInitials(row.name)}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-zinc-100">{row.name}</p>
+                      <p className="truncate font-medium text-zinc-100 hover:text-zinc-50">{row.name}</p>
                       <p className="line-clamp-1 text-xs text-zinc-500">{row.description}</p>
                     </div>
-                  </div>
+                  </Link>
                 </td>
                 <td className="px-4 py-3 text-zinc-300">{row.industry}</td>
                 <td className="px-4 py-3 text-zinc-400">{row.location}</td>

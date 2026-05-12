@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown, LogOut, User, KeyRound } from "lucide-react";
@@ -16,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { companyInitials } from "@/lib/company-display";
+
+const subscribe = () => () => {};
 
 function NavTab({
   href,
@@ -51,11 +54,13 @@ export function AppNavbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, isAuthenticated, isBootstrapping, logout } = useAuth();
+  const isMounted = useSyncExternalStore(subscribe, () => true, () => false);
 
   const onHome = pathname === "/";
-  const tab = searchParams.get("tab");
-  const overviewActive = onHome && tab === "overview";
-  const companiesActive = onHome && (tab === "companies" || tab === null || tab === "");
+  const tab = isMounted ? searchParams.get("tab") : null;
+  const overviewActive = isMounted && onHome && tab === "overview";
+  const companiesActive =
+    isMounted && onHome && (tab === "companies" || tab === null || tab === "");
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl">
@@ -82,7 +87,7 @@ export function AppNavbar() {
           </nav>
 
           <div className="flex min-w-0 justify-end gap-2 sm:gap-3">
-          {isBootstrapping ? (
+          {!isMounted || isBootstrapping ? (
             <div className="h-9 w-24 animate-pulse rounded-lg bg-zinc-800/60" aria-hidden />
           ) : isAuthenticated && user ? (
             <DropdownMenu>

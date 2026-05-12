@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MOCK_COMPANIES } from "@/data/mock-companies";
 import type { CompanyListParams, CompanySortField } from "@/types/company";
 import { formatCompanySize } from "@/lib/company-display";
 import type { CompanySize } from "@/types/company";
@@ -26,10 +25,6 @@ const SORT_OPTIONS: { value: CompanySortField; label: string }[] = [
   { value: "size", label: "Company size" },
 ];
 
-function distinctSorted(values: string[]) {
-  return Array.from(new Set(values)).sort();
-}
-
 export type CompaniesViewMode = "grid" | "table";
 
 interface CompaniesToolbarProps {
@@ -40,6 +35,8 @@ interface CompaniesToolbarProps {
   viewMode: CompaniesViewMode;
   onViewModeChange: (mode: CompaniesViewMode) => void;
   onResetFilters: () => void;
+  industries: string[];
+  locations: string[];
   className?: string;
 }
 
@@ -51,10 +48,12 @@ export function CompaniesToolbar({
   viewMode,
   onViewModeChange,
   onResetFilters,
+  industries,
+  locations,
   className,
 }: CompaniesToolbarProps) {
-  const industries = useMemo(() => distinctSorted(MOCK_COMPANIES.map((c) => c.industry)), []);
-  const locations = useMemo(() => distinctSorted(MOCK_COMPANIES.map((c) => c.location)), []);
+  const uniqueIndustries = useMemo(() => Array.from(new Set(industries)), [industries]);
+  const uniqueLocations = useMemo(() => Array.from(new Set(locations)), [locations]);
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -110,7 +109,7 @@ export function CompaniesToolbar({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All industries</SelectItem>
-              {industries.map((i) => (
+              {uniqueIndustries.map((i) => (
                 <SelectItem key={i} value={i}>
                   {i}
                 </SelectItem>
@@ -129,7 +128,7 @@ export function CompaniesToolbar({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All locations</SelectItem>
-              {locations.map((l) => (
+              {uniqueLocations.map((l) => (
                 <SelectItem key={l} value={l}>
                   {l}
                 </SelectItem>

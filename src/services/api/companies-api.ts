@@ -1,92 +1,131 @@
 import { apiClient } from "@/services/api/client";
-import { MOCK_COMPANIES } from "@/data/mock-companies";
-import type { Company, CompanyListParams, CompanySize } from "@/types/company";
+import type { ApiResponse } from "@/types/api";
+import type { Company, CompanyListParams } from "@/types/company";
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_COMPANIES !== "false";
+function normalizeCompanySize(value: unknown): Company["size"] {
+  if (value === "STARTUP" || value === "SMB" || value === "MID_MARKET" || value === "ENTERPRISE") {
+    return value;
+  }
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return "SMB";
 }
 
-const SIZE_ORDER: Record<CompanySize, number> = {
-  STARTUP: 0,
-  SMB: 1,
-  MID_MARKET: 2,
-  ENTERPRISE: 3,
-};
+function normalizeCompany(payload: unknown, index = 0): Company | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
 
-function matchesSearch(company: Company, q: string) {
-  if (!q.trim()) return true;
-  const needle = q.trim().toLowerCase();
-  const hay = [
-    company.name,
-    company.description,
-    company.industry,
-    company.location,
-    ...company.tags,
-  ]
-    .join(" ")
-    .toLowerCase();
-  return hay.includes(needle);
+  const candidate = payload as Record<string, unknown>;
+  const name = typeof candidate.name === "string" && candidate.name.trim() ? candidate.name.trim() : null;
+
+  if (!name) {
+    return null;
+  }
+
+  const tags = Array.isArray(candidate.tags)
+    ? candidate.tags
+        .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
+        .filter((tag): tag is string => Boolean(tag))
+    : [];
+
+  return {
+    id:
+      typeof candidate.id === "string" || typeof candidate.id === "number"
+        ? String(candidate.id)
+        : `${name.toLowerCase().replace(/\s+/g, "-")}-${index}`,
+    name,
+    logoUrl: typeof candidate.logoUrl === "string" ? candidate.logoUrl : null,
+    description:
+      typeof candidate.description === "string" && candidate.description.trim()
+        ? candidate.description.trim()
+        : "No description available.",
+    industry:
+      typeof candidate.industry === "string" && candidate.industry.trim()
+        ? candidate.industry.trim()
+        : "Unknown",
+    location:
+      typeof candidate.location === "string" && candidate.location.trim()
+        ? candidate.location.trim()
+        : "Unknown",
+    size: normalizeCompanySize(candidate.size),
+    tags,
+  };
 }
 
-function compare(
-  a: Company,
-  b: Company,
-  sortBy: CompanyListParams["sortBy"],
-  dir: CompanyListParams["sortDir"]
-) {
-  const sign = dir === "asc" ? 1 : -1;
-  if (sortBy === "size") {
-    return (SIZE_ORDER[a.size] - SIZE_ORDER[b.size]) * sign;
+function unwrapCompanyListResponse(
+  payload: Company[] | ApiResponse<Company[]> | null | undefined
+): Company[] {
+  if (Array.isArray(payload)) {
+    return payload
+      .map((company, index) => normalizeCompany(company, index))
+      .filter((company): company is Company => company !== null);
   }
-  const av = a[sortBy].toLowerCase();
-  const bv = b[sortBy].toLowerCase();
-  if (av < bv) return -1 * sign;
-  if (av > bv) return 1 * sign;
-  return 0;
+
+  if (payload && Array.isArray(payload.data)) {
+    return payload.data
+      .map((company, index) => normalizeCompany(company, index))
+      .filter((company): company is Company => company !== null);
+  }
+
+  return [];
 }
 
-function filterAndSort(source: Company[], params: CompanyListParams): Company[] {
-  let list = source.filter((c) => matchesSearch(c, params.search));
-  if (params.industry !== "all") {
-    list = list.filter((c) => c.industry === params.industry);
+function unwrapCompanyResponse(
+  payload: Company | ApiResponse<Company> | null | undefined
+): Company | null {
+  if (!payload) {
+    return null;
   }
-  if (params.location !== "all") {
-    list = list.filter((c) => c.location === params.location);
+  if ("data" in payload) {
+    return normalizeCompany(payload.data);
   }
-  if (params.size !== "all") {
-    list = list.filter((c) => c.size === params.size);
-  }
-  return [...list].sort((a, b) => compare(a, b, params.sortBy, params.sortDir));
+
+  return normalizeCompany(payload);
 }
 
-/**
- * Fetches companies. Mock path simulates latency and client-side filtering.
- * Spring Boot: replace body with `apiClient.get<Company[]>("/api/companies", { params })` and map DTOs.
- */
 export async function fetchCompanies(params: CompanyListParams): Promise<Company[]> {
-  if (USE_MOCK) {
-    await delay(320);
-    return filterAndSort(MOCK_COMPANIES, params);
-  }
-
-  const { data } = await apiClient.get<Company[]>("/api/companies", {
-    params: {
-      q: params.search || undefined,
-      industry: params.industry === "all" ? undefined : params.industry,
-      location: params.location === "all" ? undefined : params.location,
-      size: params.size === "all" ? undefined : params.size,
-      sort: `${params.sortBy},${params.sortDir}`,
-    },
+  const { data } = await apiClient.post<Company[] | ApiResponse<Company[]>>("/api/company/filter", {
+    query: params.search.trim() || null,
+    industry: params.industry === "all" ? null : params.industry,
+    location: params.location === "all" ? null : params.location,
+    size: params.size === "all" ? null : params.size,
+    sortBy: params.sortBy,
+    sortDir: params.sortDir,
   });
-  return data;
+  return unwrapCompanyListResponse(data);
+}
+
+export async function fetchCompanyBySlug(slug: string): Promise<Company | null> {
+  try {
+    const { data } = await apiClient.get<Company | ApiResponse<Company>>(`/api/company/${slug}`);
+    return unwrapCompanyResponse(data);
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "response" in error) {
+      const response = (error as { response?: { status?: number } }).response;
+      if (response?.status === 404) {
+        return null;
+      }
+    }
+    throw error;
+  }
 }
 
 export function getDistinctIndustries(companies: Company[]) {
-  return Array.from(new Set(companies.map((c) => c.industry))).sort();
+  return Array.from(
+    new Set(
+      companies
+        .map((company) => company.industry?.trim())
+        .filter((industry): industry is string => Boolean(industry))
+    )
+  ).sort();
 }
 
 export function getDistinctLocations(companies: Company[]) {
-  return Array.from(new Set(companies.map((c) => c.location))).sort();
+  return Array.from(
+    new Set(
+      companies
+        .map((company) => company.location?.trim())
+        .filter((location): location is string => Boolean(location))
+    )
+  ).sort();
 }

@@ -1,17 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
 import { HomeOverview } from "@/components/home/home-overview";
 import { CompaniesExplorer } from "@/components/companies/companies-explorer";
 
-export function HomeDashboard() {
-  const searchParams = useSearchParams();
+type HomeTab = "overview" | "companies";
 
-  const tab = useMemo(() => {
-    const raw = searchParams.get("tab");
-    return raw === "overview" ? "overview" : "companies";
-  }, [searchParams]);
+export function HomeDashboard({ initialTab }: { initialTab: HomeTab }) {
+  const tab = initialTab;
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 sm:py-10">

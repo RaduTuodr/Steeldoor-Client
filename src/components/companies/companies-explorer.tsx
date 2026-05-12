@@ -4,6 +4,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useCompaniesQuery } from "@/hooks/use-companies-query";
 import { defaultCompanyListParams } from "@/lib/default-company-params";
 import type { CompanyListParams } from "@/types/company";
+import { getDistinctIndustries, getDistinctLocations } from "@/services/api/companies-api";
 import { CompaniesToolbar, type CompaniesViewMode } from "@/components/companies/companies-toolbar";
 import { CompanyCard } from "@/components/companies/company-card";
 import { CompaniesTable } from "@/components/companies/companies-table";
@@ -11,6 +12,7 @@ import { CompaniesEmptyState } from "@/components/companies/companies-empty-stat
 import { CompaniesSkeletonGrid } from "@/components/companies/companies-skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useEffect } from "react";
 
 export function CompaniesExplorer() {
   const [params, setParams] = useState<CompanyListParams>(defaultCompanyListParams);
@@ -22,12 +24,21 @@ export function CompaniesExplorer() {
   );
 
   const [viewMode, setViewMode] = useState<CompaniesViewMode>("grid");
-  const { data, isPending, isFetching, isError, error, refetch, isPlaceholderData } =
-    useCompaniesQuery(queryParams);
+  const { data, isPending, isFetching, isError, error, refetch, isPlaceholderData } = useCompaniesQuery(queryParams);
+  const { data: allCompanies } = useCompaniesQuery(defaultCompanyListParams);
 
-  const list = data ?? [];
+  // Ensure list is always an array and filter out invalid items
+  const list = Array.isArray(data) ? data.filter(Boolean) : [];
+  const industries = useMemo(() => getDistinctIndustries(allCompanies ?? []), [allCompanies]);
+  const locations = useMemo(() => getDistinctLocations(allCompanies ?? []), [allCompanies]);
   const showSkeleton = isPending && !isPlaceholderData;
   const isStaleSearch = deferredSearch !== searchInput;
+
+  useEffect(() => {
+    if (data) {
+      console.log("Filtered Companies Result:", data);
+    }
+  }, [data]); // This triggers every time 'data' updates
 
   const resetAll = () => {
     setParams(defaultCompanyListParams);
@@ -44,6 +55,8 @@ export function CompaniesExplorer() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onResetFilters={resetAll}
+        industries={industries}
+        locations={locations}
       />
 
       <Separator className="bg-zinc-800/80" />
@@ -81,7 +94,7 @@ export function CompaniesExplorer() {
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {list.map((company) => (
-            <CompanyCard key={company.id} company={company} />
+            company?.id ? <CompanyCard key={company.id} company={company} /> : null
           ))}
         </div>
       ) : (
