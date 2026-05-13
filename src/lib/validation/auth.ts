@@ -38,5 +38,30 @@ export const registerSchema = z
     path: ["confirmPassword"],
   });
 
+export const passwordResetPhoneSchema = z
+  .string()
+  .min(1, "Phone number is required")
+  .min(8, "Enter a complete number including country code (e.g. +40 …)");
+
+export const passwordResetConfirmSchema = z
+  .object({
+    code: z
+      .string()
+      .min(4, "Enter the code from SMS")
+      .max(16, "Code looks too long"),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Include at least one uppercase letter")
+      .regex(/[a-z]/, "Include at least one lowercase letter")
+      .regex(/[0-9]/, "Include at least one number"),
+    confirmPassword: z.string().min(1, "Confirm your new password"),
+  })
+  .refine((value) => value.newPassword === value.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
+export type PasswordResetConfirmFormValues = z.infer<typeof passwordResetConfirmSchema>;

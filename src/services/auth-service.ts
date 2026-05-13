@@ -6,6 +6,14 @@ import type {
   User,
 } from "@/types/auth";
 
+function toApiUserId(id: string): number | string {
+  const trimmed = id.trim();
+  if (/^\d+$/.test(trimmed)) {
+    return Number(trimmed);
+  }
+  return trimmed;
+}
+
 function normalizeUser(payload: unknown): User | null {
   if (!payload || typeof payload !== "object") {
     return null;
@@ -45,7 +53,7 @@ class AuthService {
     const registerData = {
       username: data.username,
       email: data.email,
-      password: data.password,
+      password: data.password
     };
 
     return (await authApi.register(registerData)).data;
@@ -68,6 +76,25 @@ class AuthService {
 
   async refreshToken(): Promise<AuthResponse> {
     return (await authApi.refresh()).data;
+  }
+
+  async requestPasswordChange(userId: string, phoneNumber: string): Promise<void> {
+    await authApi.passwordRequest({
+      userId: toApiUserId(userId),
+      phoneNumber: phoneNumber.trim(),
+    });
+  }
+
+  async confirmPasswordChange(
+    userId: string,
+    code: string,
+    newPassword: string
+  ): Promise<void> {
+    await authApi.passwordConfirm({
+      userId: toApiUserId(userId),
+      code: code.trim(),
+      newPassword,
+    });
   }
 }
 

@@ -41,14 +41,22 @@ export interface RegisterCredentials {
 }
 
 /**
- * Response from authentication endpoints
+ * Wire format for POST /api/auth/login — matches server LoginResponseDTO
+ */
+export interface LoginResponseDTO {
+  id: number;
+  token: string;
+  user: Partial<User> & { id?: string | number; email?: string };
+}
+
+/**
+ * Response from authentication endpoints (normalized on the client where applicable)
  */
 export interface AuthResponse {
-  /** Authenticated user data */
+  /** Same id as user.id when returned by login; optional for other auth calls */
+  id?: number;
   user: User;
-  /** JWT authentication token */
   token: string;
-  /** Optional success message */
   message?: string;
 }
 
@@ -60,4 +68,17 @@ export interface ApiError {
   message: string;
   /** Optional error code for programmatic handling */
   code?: string;
+}
+
+/** POST /password/request — matches server PasswordChangeRequestDTO */
+export interface PasswordChangeRequestPayload {
+  userId: number | string;
+  phoneNumber: string;
+}
+
+/** POST /password/confirm — matches server PasswordChangeConfirmDTO */
+export interface PasswordChangeConfirmPayload {
+  userId: number | string;
+  code: string;
+  newPassword: string;
 }
