@@ -23,7 +23,22 @@ export default function ProfilePage() {
     return null;
   }
 
-  console.log(user);
+  const date = new Date(user.createdAt);
+  const day = date.getDate();
+  const month = date.toLocaleString('en-US', { month: 'short' });
+  const year = date.getFullYear();
+
+  const suffix = (day : number) => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1:  return "st";
+      case 2:  return "nd";
+      case 3:  return "rd";
+      default: return "th";
+    }
+  };
+
+  const formattedDate = `${month} ${day}${suffix(day)}, ${year}`;
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10 sm:px-6">
@@ -47,7 +62,7 @@ export default function ProfilePage() {
           <Separator />
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Member since</p>
-            <p className="mt-1 text-zinc-100">{new Date(user.createdAt).toLocaleDateString()}</p>
+            <p className="mt-1 text-zinc-100">{formattedDate}</p>
           </div>
         </CardContent>
       </Card>
