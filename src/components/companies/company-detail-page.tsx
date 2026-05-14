@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { companyInitials, formatCompanySize } from "@/lib/company-display";
+import { CompanySubmissionsPanel } from "@/components/companies/company-submissions-panel";
 
 function CompanyDetailSkeleton() {
   return (
@@ -148,6 +149,7 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
                 {company.tags.length}
               </p>
             </div>
+            <CompanySubmissionsPanel companySlug={slug} companyName={company.name} />
           </CardContent>
         </Card>
       </div>
