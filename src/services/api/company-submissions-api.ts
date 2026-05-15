@@ -1,199 +1,69 @@
-/**
- * Company submissions API — contract for Spring Boot (or similar) backend.
- *
- * ## List / filter (all users’ submissions for one company)
- * `POST /api/company/{slug}/submissions/filter`
- *
- * Request body (JSON):
- * ```json
- * {
- *   "query": "string | null",
- *   "status": "draft" | "submitted" | "under_review" | "closed" | null,
- *   "sortBy": "createdAt" | "title" | "status" | "submittedBy",
- *   "sortDir": "asc" | "desc",
- *   "page": 1,
- *   "pageSize": 20
- * }
- * ```
- * - `query`: free-text search across title, summary, submitter username (backend defines scope).
- * - `status`: omit or `null` when filtering by “all”.
- *
- * Response (choose one shape; client unwraps all):
- * - `CompanySubmission[]` — flat list (no pagination metadata; client uses length as `total`).
- * - `{ "data": CompanySubmission[], "total": number, "page": number, "pageSize": number }`
- * - `{ "success": true, "data": ... }` wrapping either of the above.
- *
- * ## Create (authenticated user creates a submission for this company)
- * `POST /api/company/{slug}/submissions`
- *
- * Body: `{ "title": string, "summary": string, "status": SubmissionStatus }`
- *
- * Response: created `CompanySubmission` or `{ "success": true, "data": CompanySubmission }`.
- */
 import { apiClient } from "@/services/api/client";
-import type { ApiResponse, PaginatedResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api";
 import type {
   CompanySubmission,
   CompanySubmissionListParams,
   CompanySubmissionListResult,
   CreateCompanySubmissionPayload,
-  SubmissionStatus,
 } from "@/types/company-submission";
-import { SUBMISSION_STATUSES } from "@/types/company-submission";
 
-function normalizeSubmissionStatus(value: unknown): SubmissionStatus {
-  if (typeof value === "string" && (SUBMISSION_STATUSES as readonly string[]).includes(value)) {
-    return value as SubmissionStatus;
-  }
-  return "draft";
-}
-
-function normalizeSubmission(payload: unknown, index = 0): CompanySubmission | null {
-  if (!payload || typeof payload !== "object") {
-    return null;
-  }
-
-  const row = payload as Record<string, unknown>;
-  const title = typeof row.title === "string" && row.title.trim() ? row.title.trim() : null;
-  if (!title) {
-    return null;
-  }
-
-  let submittedByUsername = "Unknown";
-  let submittedByUserId = "";
-
-  if (typeof row.submittedByUsername === "string" && row.submittedByUsername.trim()) {
-    submittedByUsername = row.submittedByUsername.trim();
-  } else if (row.submittedBy && typeof row.submittedBy === "object") {
-    const u = row.submittedBy as Record<string, unknown>;
-    if (typeof u.username === "string" && u.username.trim()) {
-      submittedByUsername = u.username.trim();
-    }
-    if (typeof u.id === "string" || typeof u.id === "number") {
-      submittedByUserId = String(u.id);
-    }
-  }
-
-  if (typeof row.submittedByUserId === "string" || typeof row.submittedByUserId === "number") {
-    submittedByUserId = String(row.submittedByUserId);
-  }
-
-  const summary =
-    typeof row.summary === "string" && row.summary.trim() ? row.summary.trim() : "";
-
-  const createdRaw = row.createdAt ?? row.created_at;
-  const createdAt =
-    typeof createdRaw === "string" && createdRaw.trim()
-      ? createdRaw.trim()
-      : new Date().toISOString();
+function normalizeSubmission(payload: any): CompanySubmission | null {
+  if (!payload || typeof payload !== "object") return null;
 
   return {
-    id:
-      typeof row.id === "string" || typeof row.id === "number"
-        ? String(row.id)
-        : `submission-${index}-${title.slice(0, 24).toLowerCase().replace(/\s+/g, "-")}`,
-    title,
-    summary,
-    status: normalizeSubmissionStatus(row.status),
-    submittedByUserId,
-    submittedByUsername,
-    createdAt,
+    id: String(payload.id),
+    company: payload.company,
+    user: payload.user,
+    position: payload.position || "Unknown Position",
+    offerReceived: Boolean(payload.offerReceived),
+    overallDifficulty: Number(payload.overallDifficulty || 0),
+    createdAt: payload.createdAt || new Date().toISOString(),
   };
 }
 
-function mapSubmissionList(items: unknown[]): CompanySubmission[] {
-  return items
-    .map((item, index) => normalizeSubmission(item, index))
-    .filter((s): s is CompanySubmission => s !== null);
+function unwrapListPayload(payload: any): CompanySubmissionListResult {
+  if (!payload) {
+    return { submissions: [], total: 0, page: 1, pageSize: 20 };
+  }
+
+  if (payload.success && payload.data) {
+    return unwrapListPayload(payload.data);
+  }
+
+  const content = payload.content || (Array.isArray(payload) ? payload : []);
+  const total = payload.totalElements ?? content.length;
+  const page = (payload.number ?? 0) + 1;
+  const pageSize = payload.size ?? 20;
+
+  return {
+    submissions: content.map(normalizeSubmission).filter(Boolean),
+    total,
+    page,
+    pageSize,
+  };
 }
 
-function isPaginatedShape(
-  value: unknown
-): value is PaginatedResponse<unknown> | { data: unknown[]; total: number; page: number; pageSize: number } {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const o = value as Record<string, unknown>;
-  return Array.isArray(o.data) && typeof o.total === "number";
-}
-
-function unwrapListPayload(payload: unknown): CompanySubmissionListResult {
-  if (Array.isArray(payload)) {
-    const submissions = mapSubmissionList(payload);
-    return {
-      submissions,
-      total: submissions.length,
-      page: 1,
-      pageSize: submissions.length || 1,
-    };
-  }
-
-  if (!payload || typeof payload !== "object") {
-    return { submissions: [], total: 0, page: 1, pageSize: defaultPageSize() };
-  }
-
-  const root = payload as Record<string, unknown>;
-
-  if ("success" in root && root.data !== undefined) {
-    return unwrapListPayload(root.data);
-  }
-
-  if (isPaginatedShape(payload)) {
-    const p = payload as PaginatedResponse<unknown>;
-    const submissions = mapSubmissionList(p.data);
-    return {
-      submissions,
-      total: p.total,
-      page: p.page,
-      pageSize: p.pageSize,
-    };
-  }
-
-  if (Array.isArray(root.data)) {
-    const submissions = mapSubmissionList(root.data);
-    return {
-      submissions,
-      total: typeof root.total === "number" ? root.total : submissions.length,
-      page: typeof root.page === "number" ? root.page : 1,
-      pageSize: typeof root.pageSize === "number" ? root.pageSize : submissions.length || defaultPageSize(),
-    };
-  }
-
-  return { submissions: [], total: 0, page: 1, pageSize: defaultPageSize() };
-}
-
-function defaultPageSize() {
-  return 20;
-}
-
-function unwrapSingleSubmission(payload: unknown): CompanySubmission | null {
-  if (!payload || typeof payload !== "object") {
-    return null;
-  }
-  const root = payload as Record<string, unknown>;
-  if ("success" in root && root.data !== undefined) {
-    return normalizeSubmission(root.data);
-  }
-  return normalizeSubmission(payload);
+function unwrapSingleSubmission(payload: any): CompanySubmission | null {
+  if (!payload) return null;
+  const data = payload.success ? payload.data : payload;
+  return normalizeSubmission(data);
 }
 
 export async function fetchCompanySubmissionsFilter(
   companySlug: string,
   params: CompanySubmissionListParams
 ): Promise<CompanySubmissionListResult> {
-  const { data } = await apiClient.post<
-    | CompanySubmission[]
-    | ApiResponse<CompanySubmission[]>
-    | PaginatedResponse<CompanySubmission>
-    | ApiResponse<PaginatedResponse<CompanySubmission>>
-  >(`/api/company/${encodeURIComponent(companySlug)}/submissions/filter`, {
-    query: params.search.trim() || null,
-    status: params.status === "all" ? null : params.status,
-    sortBy: params.sortBy,
-    sortDir: params.sortDir,
-    page: params.page,
-    pageSize: params.pageSize,
-  });
+  const { data } = await apiClient.post(
+    `/api/company/${encodeURIComponent(companySlug)}/submissions/filter`,
+    {
+      position: params.position?.trim() || null,
+      offerReceived: params.offerReceived,
+      sortBy: params.sortBy,
+      sortDir: params.sortDir,
+      page: Math.max(0, params.page - 1),
+      pageSize: params.pageSize,
+    }
+  );
   return unwrapListPayload(data);
 }
 
@@ -204,11 +74,14 @@ export async function createCompanySubmission(
   const { data } = await apiClient.post<CompanySubmission | ApiResponse<CompanySubmission>>(
     `/api/company/${encodeURIComponent(companySlug)}/submissions`,
     {
-      title: payload.title.trim(),
-      summary: payload.summary.trim(),
-      status: payload.status,
+      userId: payload.userId,
+      position: payload.position.trim(),
+      overallDifficulty: payload.overallDifficulty,
+      offerReceived: payload.offerReceived,
+      createdAt: payload.createdAt,
     }
   );
+
   const created = unwrapSingleSubmission(data);
   if (!created) {
     throw new Error("Server returned an empty submission payload.");

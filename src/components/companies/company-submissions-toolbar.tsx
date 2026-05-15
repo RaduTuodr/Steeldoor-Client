@@ -10,23 +10,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { CompanySubmissionListParams, CompanySubmissionSortField } from "@/types/company-submission";
-import { SUBMISSION_STATUSES, type SubmissionStatus } from "@/types/company-submission";
+import type { 
+  CompanySubmissionListParams, 
+  CompanySubmissionSortField 
+} from "@/types/company-submission";
 import { cn } from "@/lib/utils";
 
+// Updated to match the backend switch-case logic
 const SORT_OPTIONS: { value: CompanySubmissionSortField; label: string }[] = [
-  { value: "createdAt", label: "Created" },
-  { value: "title", label: "Title" },
-  { value: "status", label: "Status" },
-  { value: "submittedBy", label: "Submitted by" },
+  { value: "createdAt", label: "Date Created" },
+  { value: "votes", label: "Most Voted" },
 ];
-
-const statusLabels: Record<SubmissionStatus, string> = {
-  draft: "Draft",
-  submitted: "Submitted",
-  under_review: "Under review",
-  closed: "Closed",
-};
 
 const PAGE_SIZES = [10, 20, 50] as const;
 
@@ -47,6 +41,12 @@ export function CompanySubmissionsToolbar({
   onResetFilters,
   className,
 }: CompanySubmissionsToolbarProps) {
+  
+  const handleOfferChange = (value: string) => {
+    const offerReceived = value === "all" ? null : value === "true";
+    onParamsChange({ ...params, offerReceived, page: 1 });
+  };
+
   return (
     <div className={cn("space-y-4", className)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -55,33 +55,40 @@ export function CompanySubmissionsToolbar({
           <Input
             value={searchInput}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search titles, summaries, submitters…"
+            placeholder="Search by position (e.g. Software Engineer)..."
             className="rounded-lg border-zinc-800 bg-zinc-950/60 pl-9 ring-offset-zinc-950"
             aria-label="Search company submissions"
           />
         </div>
-        <Button type="button" variant="outline" size="sm" className="h-9 shrink-0 sm:self-auto" onClick={onResetFilters}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 shrink-0 sm:self-auto"
+          onClick={onResetFilters}
+        >
           Reset filters
         </Button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-zinc-500">Status</label>
-          <Select value={params.status} onValueChange={(status) => onParamsChange({ ...params, status, page: 1 })}>
+          <label className="text-xs font-medium text-zinc-500">Outcome</label>
+          <Select 
+            value={params.offerReceived === null ? "all" : String(params.offerReceived)} 
+            onValueChange={handleOfferChange}
+          >
             <SelectTrigger className="rounded-lg border-zinc-800 bg-zinc-950/60">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="Offer status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              {SUBMISSION_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {statusLabels[s]}
-                </SelectItem>
-              ))}
+              <SelectItem value="all">All outcomes</SelectItem>
+              <SelectItem value="true">Offer Received</SelectItem>
+              <SelectItem value="false">No Offer</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-zinc-500">Sort by</label>
           <Select
@@ -102,11 +109,14 @@ export function CompanySubmissionsToolbar({
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-zinc-500">Direction</label>
           <Select
             value={params.sortDir}
-            onValueChange={(sortDir) => onParamsChange({ ...params, sortDir: sortDir as "asc" | "desc", page: 1 })}
+            onValueChange={(sortDir) => 
+              onParamsChange({ ...params, sortDir: sortDir as "asc" | "desc", page: 1 })
+            }
           >
             <SelectTrigger className="rounded-lg border-zinc-800 bg-zinc-950/60">
               <SelectValue placeholder="Direction" />
@@ -117,6 +127,7 @@ export function CompanySubmissionsToolbar({
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-zinc-500">Page size</label>
           <Select

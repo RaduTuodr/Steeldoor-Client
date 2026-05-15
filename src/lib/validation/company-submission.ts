@@ -1,10 +1,20 @@
 import { z } from "zod";
-import { SUBMISSION_STATUSES } from "@/types/company-submission";
 
 export const companySubmissionFormSchema = z.object({
-  title: z.string().min(1, "Title is required").max(120, "Title is too long"),
-  summary: z.string().max(2000, "Summary is too long"),
-  status: z.enum(SUBMISSION_STATUSES),
+  position: z
+    .string()
+    .min(1, "Position is required")
+    .max(120, "Position title is too long"),
+  
+  overallDifficulty: z
+    .number()
+    .min(1, "Minimum difficulty is 1")
+    .max(5, "Maximum difficulty is 5"),
+  
+  offerReceived: z
+    .boolean({
+      error: "Please specify if an offer was received",
+    }),
 });
 
 export type CompanySubmissionFormValues = z.infer<typeof companySubmissionFormSchema>;

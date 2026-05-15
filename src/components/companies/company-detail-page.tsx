@@ -19,6 +19,7 @@ function CompanyDetailSkeleton() {
         <Skeleton className="h-80 rounded-2xl" />
         <Skeleton className="h-80 rounded-2xl" />
       </div>
+      <Skeleton className="mt-6 h-[28rem] rounded-2xl" />
     </div>
   );
 }
@@ -74,7 +75,7 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
         </Link>
       </Button>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
         <Card className="overflow-hidden border-zinc-800/80 bg-zinc-900/40">
           <CardHeader className="gap-6 border-b border-zinc-800/70 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950/80 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-4">
@@ -122,11 +123,6 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Company ID</p>
-              <p className="mt-1 font-mono text-xs text-zinc-300">{company.id}</p>
-            </div>
-            <Separator className="bg-zinc-800/70" />
-            <div>
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Industry</p>
               <p className="mt-1 inline-flex items-center gap-2 text-zinc-200">
                 <Building2 className="h-4 w-4 text-zinc-500" />
@@ -141,18 +137,15 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
                 {company.location}
               </p>
             </div>
-            <Separator className="bg-zinc-800/70" />
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Tags count</p>
-              <p className="mt-1 inline-flex items-center gap-2 text-zinc-200">
-                <Tags className="h-4 w-4 text-zinc-500" />
-                {company.tags.length}
-              </p>
-            </div>
-            <CompanySubmissionsPanel companySlug={slug} companyName={company.name} />
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-6 border-zinc-800/80 bg-zinc-900/35">
+        <CardContent className="p-6">
+          <CompanySubmissionsPanel companySlug={slug} companyName={company.name} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

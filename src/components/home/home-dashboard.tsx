@@ -27,9 +27,8 @@ export function HomeDashboard({ initialTab }: { initialTab: HomeTab }) {
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Directory</p>
           <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">Companies</h2>
           <p className="max-w-2xl text-sm text-zinc-500">
-            Search, filter, and sort a mock directory. The data layer is isolated so you can point it at{" "}
-            <code className="rounded bg-zinc-900 px-1 py-0.5 text-xs text-zinc-300">GET /api/companies</code>{" "}
-            without restructuring the UI.
+            Discover what an employer is really like before you make your next move. <br/>
+            Search <b>reviews</b> and <b>ratings</b>, and filter companies based on the qualities that matter most to your job search.{" "}
           </p>
           <div className="mt-8">
             <CompaniesExplorer />

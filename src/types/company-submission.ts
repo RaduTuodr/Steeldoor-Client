@@ -1,9 +1,7 @@
-export const SUBMISSION_STATUSES = ["draft", "submitted", "under_review", "closed"] as const;
+import { User } from "./auth";
+import { Company } from "./company";
 
-export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
-
-/** Sort fields the backend should support (mirror Spring enum / query DTO). */
-export type CompanySubmissionSortField = "createdAt" | "title" | "status" | "submittedBy";
+export type CompanySubmissionSortField = "createdAt" | "votes";
 
 /**
  * One row in the company-wide submissions feed (every user’s submissions for this company).
@@ -11,20 +9,20 @@ export type CompanySubmissionSortField = "createdAt" | "title" | "status" | "sub
  */
 export interface CompanySubmission {
   id: string;
-  title: string;
-  summary: string;
-  status: SubmissionStatus;
-  submittedByUserId: string;
-  submittedByUsername: string;
+  company: Company;
+  user: User;
+  position: string;
+  offerReceived: boolean;
+  overallDifficulty: number;
   createdAt: string;
 }
 
 /** Client filter payload — mirrors `CompanyListParams` + companies POST `/api/company/filter`. */
 export interface CompanySubmissionListParams {
-  search: string;
-  /** `"all"` or a concrete `SubmissionStatus` string sent as `null` when `"all"`. */
-  status: string;
-  sortBy: CompanySubmissionSortField;
+  query: string | null;
+  position: string | null;
+  offerReceived: boolean | null;
+  sortBy: "createdAt" | "votes";
   sortDir: "asc" | "desc";
   page: number;
   pageSize: number;
@@ -38,7 +36,9 @@ export interface CompanySubmissionListResult {
 }
 
 export interface CreateCompanySubmissionPayload {
-  title: string;
-  summary: string;
-  status: SubmissionStatus;
+  userId: string;
+  position: string;
+  overallDifficulty: number;
+  offerReceived: boolean;
+  createdAt: string;
 }
