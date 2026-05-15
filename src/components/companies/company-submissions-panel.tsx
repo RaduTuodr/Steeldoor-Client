@@ -60,7 +60,7 @@ export function CompanySubmissionsPanel({
         position: values.position.trim(),
         overallDifficulty: values.overallDifficulty,
         offerReceived: values.offerReceived,
-        userId: "", 
+        userId: values.userId, 
         createdAt: new Date().toISOString(),
       });
       toast({

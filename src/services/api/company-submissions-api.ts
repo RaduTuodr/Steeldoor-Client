@@ -71,15 +71,22 @@ export async function createCompanySubmission(
   companySlug: string,
   payload: CreateCompanySubmissionPayload
 ): Promise<CompanySubmission> {
+
+  const payloadData = {
+    userId: payload.userId,
+    position: payload.position.trim(),
+    overallDifficulty: payload.overallDifficulty,
+    offerReceived: payload.offerReceived,
+    createdAt: payload.createdAt,
+  };
+
+  console.log(payload);
+  console.log(payloadData);
+  console.log(`/api/company/${encodeURIComponent(companySlug)}/submissions`);
+
   const { data } = await apiClient.post<CompanySubmission | ApiResponse<CompanySubmission>>(
     `/api/company/${encodeURIComponent(companySlug)}/submissions`,
-    {
-      userId: payload.userId,
-      position: payload.position.trim(),
-      overallDifficulty: payload.overallDifficulty,
-      offerReceived: payload.offerReceived,
-      createdAt: payload.createdAt,
-    }
+    payloadData
   );
 
   const created = unwrapSingleSubmission(data);

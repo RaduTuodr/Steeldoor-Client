@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 export const companySubmissionFormSchema = z.object({
+  userId: z.
+    string().
+    optional(),
+
   position: z
     .string()
     .min(1, "Position is required")

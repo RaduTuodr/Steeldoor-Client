@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "@/contexts/auth-context";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,13 @@ export function AddSubmissionDialog({
   companyName,
   isSaving,
 }: AddSubmissionDialogProps) {
+
+  const { user } = useAuth();
+
+  if (!user?.id) {
+    return;
+  }
+
   const {
     register,
     handleSubmit,
@@ -54,6 +62,7 @@ export function AddSubmissionDialog({
       position: "",
       overallDifficulty: 3,
       offerReceived: false,
+      userId: user.id
     },
   });
 
@@ -62,9 +71,9 @@ export function AddSubmissionDialog({
 
   useEffect(() => {
     if (!open) {
-      reset({ position: "", overallDifficulty: 3, offerReceived: false });
+      reset({ position: "", overallDifficulty: 3, offerReceived: false, userId: user.id });
     }
-  }, [open, reset]);
+  }, [open, reset, user]);
 
   const submit = handleSubmit(async (values) => {
     await onSubmit(values);
