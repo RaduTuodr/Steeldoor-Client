@@ -2,9 +2,24 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 import { authService } from "@/services/auth-service";
 import { tokenUtils } from "@/lib/token";
 import type { User, LoginCredentials, RegisterCredentials } from "@/types/auth";
+
+function toSessionUser(sessionUser: { email?: string | null; name?: string | null; image?: string | null } | undefined): User | null {
+  if (!sessionUser?.email) {
+    return null;
+  }
+
+  return {
+    id: sessionUser.email,
+    email: sessionUser.email,
+    username: sessionUser.name?.trim() || sessionUser.email,
+    createdAt: "",
+  };
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -20,30 +35,35 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [localUser, setLocalUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [isBootstrappingLocal, setIsBootstrappingLocal] = useState(true);
   const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
+  const sessionUser = toSessionUser(session?.user);
+  const user = localUser ?? sessionUser;
 
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = tokenUtils.getToken();
       if (!storedToken || tokenUtils.isExpired(storedToken)) {
         tokenUtils.removeToken();
-        setIsBootstrapping(false);
+        setToken(null);
+        setLocalUser(null);
+        setIsBootstrappingLocal(false);
         return;
       }
 
       try {
         const currentUser = await authService.getCurrentUser();
         setToken(storedToken);
-        setUser(currentUser);
+        setLocalUser(currentUser);
       } catch {
         tokenUtils.removeToken();
         setToken(null);
-        setUser(null);
+        setLocalUser(null);
       } finally {
-        setIsBootstrapping(false);
+        setIsBootstrappingLocal(false);
       }
     };
 
@@ -54,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await authService.login(credentials);
     tokenUtils.setToken(response.token);
     setToken(response.token);
-    setUser(response.user);
+    setLocalUser(response.user);
     return response.user;
   }, []);
 
@@ -65,23 +85,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     tokenUtils.removeToken();
     setToken(null);
-    setUser(null);
+    setLocalUser(null);
+    await signOut({ redirect: false });
     router.replace("/login");
   }, [router]);
 
   const setAuth = useCallback((newUser: User, newToken: string) => {
     tokenUtils.setToken(newToken);
     setToken(newToken);
-    setUser(newUser);
+    setLocalUser(newUser);
   }, []);
 
   const clearAuth = useCallback(() => {
     tokenUtils.removeToken();
     setToken(null);
-    setUser(null);
+    setLocalUser(null);
   }, []);
 
-  const isAuthenticated = !!token && !!user;
+  const isBootstrapping = isBootstrappingLocal || sessionStatus === "loading";
+  const isAuthenticated = (!!token && !!localUser) || !!sessionUser;
 
   const value: AuthContextType = {
     user,

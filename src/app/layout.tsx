@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { ToastProvider } from "@/components/ui/toast";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { NextAuthSessionProvider } from "@/components/providers/session-provider";
 import { AppShell } from "@/components/layout/app-shell";
 
 export const metadata: Metadata = {
@@ -29,16 +30,18 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className="h-full bg-zinc-950 text-zinc-100 antialiased">
-        <QueryProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <Suspense fallback={<NavbarFallback />}>
-                <AppShell>{children}</AppShell>
-              </Suspense>
-              <Toaster />
-            </ToastProvider>
-          </AuthProvider>
-        </QueryProvider>
+        <NextAuthSessionProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <Suspense fallback={<NavbarFallback />}>
+                  <AppShell>{children}</AppShell>
+                </Suspense>
+                <Toaster />
+              </ToastProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </NextAuthSessionProvider>
       </body>
     </html>
   );

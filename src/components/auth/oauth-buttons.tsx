@@ -1,15 +1,34 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 interface OAuthButtonsProps {
   className?: string;
 }
 
-/**
- * OAuthButtons - Placeholder buttons for future OAuth2 integration
- * Currently non-functional, ready for Google and GitHub OAuth implementation
- */
 export function OAuthButtons({ className }: OAuthButtonsProps) {
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
+
+  const handleGoogleSubmit = async() => {
+    try {
+      await signIn("google", { callbackUrl: redirect });
+    } catch (error) {
+      console.error("Google sign in failed:", error);
+    }
+  };
+
+  const handleGithubSubmit = async () => {
+    try {
+      await signIn("github", { callbackUrl: redirect });
+    } catch (error) {
+      console.error("GitHub sign in failed:", error);
+    }
+  };
+
   return (
     <div className={cn("space-y-3", className)}>
       <div className="relative">
@@ -26,7 +45,7 @@ export function OAuthButtons({ className }: OAuthButtonsProps) {
       <Button
         variant="outline"
         className="h-11 w-full rounded-xl border-white/10 bg-white/[0.03] text-zinc-100 hover:bg-white/[0.06] transition-all duration-200"
-        disabled
+        onClick={handleGoogleSubmit}
       >
         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -52,7 +71,7 @@ export function OAuthButtons({ className }: OAuthButtonsProps) {
       <Button
         variant="outline"
         className="h-11 w-full rounded-xl border-white/10 bg-white/[0.03] text-zinc-100 hover:bg-white/[0.06] transition-all duration-200"
-        disabled
+        onClick={handleGithubSubmit}
       >
         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
           <path

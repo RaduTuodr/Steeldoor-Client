@@ -4,10 +4,6 @@ import { useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 
-/**
- * Hook for protecting routes that require authentication
- * Redirects to login if user is not authenticated
- */
 export function useProtectedRoute(): void {
   const { isAuthenticated, isBootstrapping } = useAuth();
   const router = useRouter();
@@ -25,16 +21,9 @@ export function useProtectedRoute(): void {
   }, [isAuthenticated, isBootstrapping, router, pathname, searchParams]);
 }
 
-/**
- * Hook for protecting routes that require authentication (with options)
- * @param options - Configuration options
- */
 interface UseProtectedRouteOptions {
-  /** URL to redirect to if not authenticated (default: /login) */
   redirectTo?: string;
-  /** Whether to store the original URL for post-login redirect */
   storeOriginalUrl?: boolean;
-  /** Callback to run when access is denied */
   onAccessDenied?: () => void;
 }
 
@@ -62,11 +51,6 @@ export function useProtectedRouteWithOptions(options: UseProtectedRouteOptions =
   }, [isAuthenticated, isBootstrapping, router, pathname, searchParams, redirectTo, storeOriginalUrl, onAccessDenied]);
 }
 
-/**
- * Hook for routes that should only be accessible to unauthenticated users
- * (e.g., login, register pages)
- * Redirects to dashboard/home if already authenticated
- */
 export function useGuestRoute(defaultRedirect: string = "/"): void {
   const { isAuthenticated, isBootstrapping } = useAuth();
   const router = useRouter();
