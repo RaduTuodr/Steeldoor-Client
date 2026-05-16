@@ -67,6 +67,11 @@ export async function fetchCompanySubmissionsFilter(
   return unwrapListPayload(data);
 }
 
+export async function fetchUserSubmissions(userId: string): Promise<CompanySubmissionListResult> {
+  const { data } = await apiClient.get(`/submission/${encodeURIComponent(userId)}`);
+  return unwrapListPayload(data);
+}
+
 export async function createCompanySubmission(
   companySlug: string,
   payload: CreateCompanySubmissionPayload

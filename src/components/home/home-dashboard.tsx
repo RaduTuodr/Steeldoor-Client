@@ -14,10 +14,6 @@ export function HomeDashboard({ initialTab }: { initialTab: HomeTab }) {
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Workspace</p>
           <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">Overview</h2>
-          <p className="max-w-2xl text-sm text-zinc-500">
-            High-level signals for your workspace. Swap these cards for live metrics from your Spring Boot
-            services when you are ready.
-          </p>
           <div className="mt-8">
             <HomeOverview />
           </div>

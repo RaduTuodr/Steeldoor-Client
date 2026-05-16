@@ -79,8 +79,19 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
         <Card className="overflow-hidden border-zinc-800/80 bg-zinc-900/40">
           <CardHeader className="gap-6 border-b border-zinc-800/70 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950/80 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-800 to-zinc-950 text-lg font-semibold text-zinc-100 shadow-inner shadow-black/20">
-                {companyInitials(company.name)}
+              <div
+                className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-800 to-zinc-950 text-sm font-semibold text-zinc-200 transition-transform duration-200 group-hover:scale-[1.03]"
+                aria-hidden
+              >
+                {company.logoUrl ? (
+                  <img
+                    src={company.logoUrl}
+                    alt={company.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{companyInitials(company.name)}</span>
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">{company.industry}</p>

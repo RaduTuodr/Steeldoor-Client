@@ -32,7 +32,15 @@ export function CompanyCard({ company, className }: CompanyCardProps) {
             className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-800 to-zinc-950 text-sm font-semibold text-zinc-200 transition-transform duration-200 group-hover:scale-[1.03]"
             aria-hidden
           >
-            <span>{companyInitials(company.name)}</span>
+            {company.logoUrl ? (
+              <img
+                src={company.logoUrl}
+                alt={company.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span>{companyInitials(company.name)}</span>
+            )}
           </div>
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
