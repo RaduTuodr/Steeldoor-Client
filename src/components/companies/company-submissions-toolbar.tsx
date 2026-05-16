@@ -73,7 +73,7 @@ export function CompanySubmissionsToolbar({
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-zinc-500">Outcome</label>
+          <label className="text-xs font-medium text-zinc-500">Offer received?</label>
           <Select 
             value={params.offerReceived === null ? "all" : String(params.offerReceived)} 
             onValueChange={handleOfferChange}

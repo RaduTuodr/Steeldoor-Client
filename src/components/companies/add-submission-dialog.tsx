@@ -127,7 +127,7 @@ export function AddSubmissionDialog({
               onValueChange={(v) => setValue("offerReceived", v === "true")}
             >
               <SelectTrigger id="offer-received" className="w-full">
-                <SelectValue placeholder="Select outcome" />
+                <SelectValue placeholder="Offer received?" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="false">No / Pending</SelectItem>
