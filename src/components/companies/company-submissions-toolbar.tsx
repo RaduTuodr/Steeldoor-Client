@@ -22,6 +22,12 @@ const SORT_OPTIONS: { value: CompanySubmissionSortField; label: string }[] = [
   { value: "votes", label: "Most Voted" },
 ];
 
+const OFFER_OPTIONS: { value: string; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "false", label: "No offer/Pending" },
+  { value: "true", label: "Offer received" }
+];
+
 const PAGE_SIZES = [10, 20, 50] as const;
 
 interface CompanySubmissionsToolbarProps {

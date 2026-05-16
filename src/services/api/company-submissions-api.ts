@@ -7,6 +7,9 @@ import type {
   CreateCompanySubmissionPayload,
 } from "@/types/company-submission";
 
+const SUBMISSION_API_BASE = "/api/submission";
+const COMPANY_API_BASE = "/api/company";
+
 function normalizeSubmission(payload: any): CompanySubmission | null {
   if (!payload || typeof payload !== "object") return null;
 
@@ -54,7 +57,7 @@ export async function fetchCompanySubmissionsFilter(
   params: CompanySubmissionListParams
 ): Promise<CompanySubmissionListResult> {
   const { data } = await apiClient.post(
-    `/api/company/${encodeURIComponent(companySlug)}/submissions/filter`,
+    `${COMPANY_API_BASE}/${encodeURIComponent(companySlug)}/submissions/filter`,
     {
       position: params.position?.trim() || null,
       offerReceived: params.offerReceived,
@@ -68,7 +71,7 @@ export async function fetchCompanySubmissionsFilter(
 }
 
 export async function fetchUserSubmissions(userId: string): Promise<CompanySubmissionListResult> {
-  const { data } = await apiClient.get(`/submission/${encodeURIComponent(userId)}`);
+  const { data } = await apiClient.get(`${SUBMISSION_API_BASE}/${encodeURIComponent(userId)}`);
   return unwrapListPayload(data);
 }
 
@@ -85,12 +88,8 @@ export async function createCompanySubmission(
     createdAt: payload.createdAt,
   };
 
-  console.log(payload);
-  console.log(payloadData);
-  console.log(`/api/company/${encodeURIComponent(companySlug)}/submissions`);
-
   const { data } = await apiClient.post<CompanySubmission | ApiResponse<CompanySubmission>>(
-    `/api/company/${encodeURIComponent(companySlug)}/submissions`,
+    `${COMPANY_API_BASE}/${encodeURIComponent(companySlug)}/submissions`,
     payloadData
   );
 
