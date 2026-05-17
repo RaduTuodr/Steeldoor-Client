@@ -14,6 +14,8 @@ export interface CompanySubmission {
   position: string;
   offerReceived: boolean;
   overallDifficulty: number;
+  totalVotes: number;
+  hasUpvoted: boolean;
   createdAt: string;
 }
 
@@ -26,6 +28,7 @@ export interface CompanySubmissionListParams {
   sortDir: "asc" | "desc";
   page: number;
   pageSize: number;
+  userId?: string | null;
 }
 
 export interface CompanySubmissionListResult {
@@ -41,4 +44,14 @@ export interface CreateCompanySubmissionPayload {
   overallDifficulty: number;
   offerReceived: boolean;
   createdAt: string;
+}
+
+export interface SubmissionVotePayload {
+  userId: string;
+  submissionId: string;
+}
+
+export interface SubmissionVoteResult {
+  totalVotes: number;
+  hasUpvoted: boolean;
 }

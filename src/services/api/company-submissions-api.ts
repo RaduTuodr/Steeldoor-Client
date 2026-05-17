@@ -1,54 +1,96 @@
 import { apiClient } from "@/services/api/client";
 import type { ApiResponse } from "@/types/api";
+import type { User } from "@/types/auth";
+import type { Company } from "@/types/company";
 import type {
   CompanySubmission,
   CompanySubmissionListParams,
   CompanySubmissionListResult,
   CreateCompanySubmissionPayload,
+  SubmissionVotePayload,
+  SubmissionVoteResult,
 } from "@/types/company-submission";
 
 const SUBMISSION_API_BASE = "/api/submission";
 const COMPANY_API_BASE = "/api/company";
+const VOTE_API_BASE = "/api/vote";
 
-function normalizeSubmission(payload: any): CompanySubmission | null {
-  if (!payload || typeof payload !== "object") return null;
+function isRecord(payload: unknown): payload is Record<string, unknown> {
+  return typeof payload === "object" && payload !== null;
+}
+
+function readVoteCount(payload: Record<string, unknown>): number {
+  return Number(
+    payload.numberOfVotes ??
+    payload.totalVotes ??
+      payload.voteCount ??
+      payload.votesCount ??
+      payload.upvoteCount ??
+      payload.upvotes ??
+      payload.votes ??
+      0
+  );
+}
+
+function unwrapSubmissionPayload(payload: unknown): Record<string, unknown> | null {
+  if (!isRecord(payload)) return null;
+  return isRecord(payload.submission) ? payload.submission : payload;
+}
+
+function normalizeSubmission(payload: unknown): CompanySubmission | null {
+  const submission = unwrapSubmissionPayload(payload);
+  if (!submission) return null;
+  const voteSource = isRecord(payload) ? payload : submission;
+  const position =
+    typeof submission.position === "string" && submission.position.trim().length > 0
+      ? submission.position
+      : "Unknown Position";
 
   return {
-    id: String(payload.id),
-    company: payload.company,
-    user: payload.user,
-    position: payload.position || "Unknown Position",
-    offerReceived: Boolean(payload.offerReceived),
-    overallDifficulty: Number(payload.overallDifficulty || 0),
-    createdAt: payload.createdAt || new Date().toISOString(),
+    id: String(submission.id),
+    company: submission.company as Company,
+    user: submission.user as User,
+    position,
+    offerReceived: Boolean(submission.offerReceived),
+    overallDifficulty: Number(submission.overallDifficulty || 0),
+    totalVotes: readVoteCount(voteSource),
+    hasUpvoted: Boolean(voteSource.hasUpvoted),
+    createdAt: String(submission.createdAt ?? new Date().toISOString()),
   };
 }
 
-function unwrapListPayload(payload: any): CompanySubmissionListResult {
+function unwrapListPayload(payload: unknown): CompanySubmissionListResult {
   if (!payload) {
     return { submissions: [], total: 0, page: 1, pageSize: 20 };
   }
 
-  if (payload.success && payload.data) {
+  if (isRecord(payload) && payload.success && payload.data) {
     return unwrapListPayload(payload.data);
   }
 
-  const content = payload.content || (Array.isArray(payload) ? payload : []);
-  const total = payload.totalElements ?? content.length;
-  const page = (payload.number ?? 0) + 1;
-  const pageSize = payload.size ?? 20;
+  const content = Array.isArray(payload)
+    ? payload
+    : isRecord(payload) && Array.isArray(payload.content)
+      ? payload.content
+      : [];
+  const pageInfo = isRecord(payload) && isRecord(payload.page) ? payload.page : payload;
+  const total = isRecord(pageInfo) ? Number(pageInfo.totalElements ?? content.length) : content.length;
+  const page = isRecord(pageInfo) ? Number(pageInfo.number ?? 0) + 1 : 1;
+  const pageSize = isRecord(pageInfo) ? Number(pageInfo.size ?? 20) : 20;
 
   return {
-    submissions: content.map(normalizeSubmission).filter(Boolean),
+    submissions: content
+      .map(normalizeSubmission)
+      .filter((submission): submission is CompanySubmission => submission !== null),
     total,
     page,
     pageSize,
   };
 }
 
-function unwrapSingleSubmission(payload: any): CompanySubmission | null {
+function unwrapSingleSubmission(payload: unknown): CompanySubmission | null {
   if (!payload) return null;
-  const data = payload.success ? payload.data : payload;
+  const data = isRecord(payload) && payload.success ? payload.data : payload;
   return normalizeSubmission(data);
 }
 
@@ -59,12 +101,14 @@ export async function fetchCompanySubmissionsFilter(
   const { data } = await apiClient.post(
     `${COMPANY_API_BASE}/${encodeURIComponent(companySlug)}/submissions/filter`,
     {
+      query: params.query?.trim() || null,
       position: params.position?.trim() || null,
       offerReceived: params.offerReceived,
       sortBy: params.sortBy,
       sortDir: params.sortDir,
       page: Math.max(0, params.page - 1),
       pageSize: params.pageSize,
+      userId: params.userId ? Number(params.userId) : null,
     }
   );
   return unwrapListPayload(data);
@@ -98,4 +142,30 @@ export async function createCompanySubmission(
     throw new Error("Server returned an empty submission payload.");
   }
   return created;
+}
+
+function unwrapVotePayload(payload: unknown): SubmissionVoteResult {
+  const data = isRecord(payload) && payload.success ? payload.data : payload;
+
+  if (!isRecord(data)) {
+    return {
+      totalVotes: 0,
+      hasUpvoted: false,
+    };
+  }
+
+  return {
+    totalVotes: readVoteCount(data),
+    hasUpvoted: Boolean(data.hasUpvoted),
+  };
+}
+
+export async function toggleSubmissionVote(
+  payload: SubmissionVotePayload
+): Promise<SubmissionVoteResult> {
+  const { data } = await apiClient.post(
+    `${VOTE_API_BASE}/${encodeURIComponent(payload.userId)}/${encodeURIComponent(payload.submissionId)}`
+  );
+
+  return unwrapVotePayload(data);
 }

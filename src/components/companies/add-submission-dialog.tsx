@@ -42,12 +42,8 @@ export function AddSubmissionDialog({
   companyName,
   isSaving,
 }: AddSubmissionDialogProps) {
-
   const { user } = useAuth();
-
-  if (!user?.id) {
-    return;
-  }
+  const userId = user?.id ?? "";
 
   const {
     register,
@@ -62,7 +58,7 @@ export function AddSubmissionDialog({
       position: "",
       overallDifficulty: 3,
       offerReceived: false,
-      userId: user.id
+      userId,
     },
   });
 
@@ -71,9 +67,13 @@ export function AddSubmissionDialog({
 
   useEffect(() => {
     if (!open) {
-      reset({ position: "", overallDifficulty: 3, offerReceived: false, userId: user.id });
+      reset({ position: "", overallDifficulty: 3, offerReceived: false, userId });
     }
-  }, [open, reset, user]);
+  }, [open, reset, userId]);
+
+  if (!user?.id) {
+    return null;
+  }
 
   const submit = handleSubmit(async (values) => {
     await onSubmit(values);

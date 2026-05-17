@@ -4,16 +4,19 @@ import { cn } from "@/lib/utils";
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Star, User } from "lucide-react";
+import { ArrowBigUp, Star, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-context";
+import { useToggleSubmissionVoteMutation } from "@/hooks/use-company-submissions-query";
 import { fetchUserSubmissions } from "@/services/api/company-submissions-api";
 import type { CompanySubmissionListResult } from "@/types/company-submission";
 
 export function HomeOverview() {
   const { user } = useAuth();
+  const voteMutation = useToggleSubmissionVoteMutation();
 
   const { data, isPending: isLoading } = useQuery<CompanySubmissionListResult>({
     queryKey: ["user-submissions", user?.id],
@@ -28,6 +31,11 @@ export function HomeOverview() {
   const showSkeleton = isLoading && reviewCount === 0;
   const recentReviews = reviews.slice(0, 3);
 
+  const handleVote = async (submissionId: string) => {
+    if (!user?.id) return;
+    await voteMutation.mutateAsync({ userId: user.id, submissionId });
+  };
+
   return (
     <div className="space-y-6">
 
@@ -35,7 +43,7 @@ export function HomeOverview() {
         <CardHeader className="flex flex-wrap items-start justify-between gap-4 pb-4">
           <div>
             <CardTitle className="text-base text-zinc-100">Your review activity</CardTitle>
-            <p className="mt-1 text-sm text-zinc-400">A quick view of reviews you've submitted across companies.</p>
+            <p className="mt-1 text-sm text-zinc-400">A quick view of reviews you&apos;ve submitted across companies.</p>
           </div>
           <Badge variant="outline" className="font-normal text-zinc-300">
             {user ? `${reviewCount} submitted` : "Not signed in"}
@@ -91,6 +99,23 @@ export function HomeOverview() {
                       <time className="text-zinc-500" dateTime={review.createdAt}>
                         {new Date(review.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
                       </time>
+                      <Button
+                        type="button"
+                        variant={review.hasUpvoted ? "secondary" : "ghost"}
+                        size="sm"
+                        className={cn(
+                          "ml-auto h-7 gap-1.5 px-2 text-[11px]",
+                          review.hasUpvoted && "text-zinc-100"
+                        )}
+                        isLoading={voteMutation.isPending && voteMutation.variables?.submissionId === review.id}
+                        onClick={() => handleVote(review.id)}
+                      >
+                        <ArrowBigUp
+                          className={cn("h-3.5 w-3.5", review.hasUpvoted && "fill-current")}
+                          aria-hidden
+                        />
+                        {review.totalVotes}
+                      </Button>
                     </div>
                   </li>
                 ))}

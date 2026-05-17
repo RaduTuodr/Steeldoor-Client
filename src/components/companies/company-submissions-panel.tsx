@@ -3,10 +3,11 @@
 import { cn } from "@/lib/utils";
 
 import { useDeferredValue, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, FilePlus2, FileText, User, Star } from "lucide-react";
+import { ArrowBigUp, ChevronLeft, ChevronRight, FilePlus2, FileText, User, Star } from "lucide-react";
 import {
   useCompanySubmissionsQuery,
   useCreateCompanySubmissionMutation,
+  useToggleSubmissionVoteMutation,
 } from "@/hooks/use-company-submissions-query";
 import { defaultCompanySubmissionListParams } from "@/lib/default-company-submission-params";
 import { toast } from "@/hooks/use-toast";
@@ -15,7 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompanySubmissionsToolbar } from "@/components/companies/company-submissions-toolbar";
 import { AddSubmissionDialog } from "@/components/companies/add-submission-dialog";
+import { SubmissionRoundsDialog } from "@/components/companies/submission-rounds-dialog";
+import { useAuth } from "@/contexts/auth-context";
 import type { CompanySubmissionFormValues } from "@/lib/validation/company-submission";
+import type { CompanySubmission } from "@/types/company-submission";
 
 export function CompanySubmissionsPanel({
   companySlug,
@@ -24,13 +28,14 @@ export function CompanySubmissionsPanel({
   companySlug: string;
   companyName: string;
 }) {
+  const { user } = useAuth();
   const [params, setParams] = useState(defaultCompanySubmissionListParams);
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput);
 
   const queryParams = useMemo(
-    () => ({ ...params, position: deferredSearch }),
-    [params, deferredSearch]
+    () => ({ ...params, position: deferredSearch, userId: user?.id ?? null }),
+    [params, deferredSearch, user?.id]
   );
 
   const { data, isPending, isError, error, refetch, isPlaceholderData } = useCompanySubmissionsQuery(
@@ -38,8 +43,10 @@ export function CompanySubmissionsPanel({
     queryParams
   );
   const createMutation = useCreateCompanySubmissionMutation(companySlug);
+  const voteMutation = useToggleSubmissionVoteMutation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<CompanySubmission | null>(null);
 
   const submissions = data?.submissions ?? [];
   const total = data?.total ?? 0;
@@ -60,7 +67,7 @@ export function CompanySubmissionsPanel({
         position: values.position.trim(),
         overallDifficulty: values.overallDifficulty,
         offerReceived: values.offerReceived,
-        userId: values.userId, 
+        userId: values.userId ?? user?.id ?? "",
         createdAt: new Date().toISOString(),
       });
       toast({
@@ -78,7 +85,32 @@ export function CompanySubmissionsPanel({
     }
   };
 
+  const handleVote = async (submissionId: string) => {
+    if (!user?.id) {
+      toast({
+        title: "Sign in required",
+        description: "You need to be signed in to vote on a submission.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await voteMutation.mutateAsync({ userId: user.id, submissionId });
+    } catch (e) {
+      toast({
+        title: "Could not update vote",
+        description: e instanceof Error ? e.message : "Check the network and try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const showSkeleton = isPending && !isPlaceholderData;
+
+  const handleOpenSubmission = (submission: CompanySubmission) => {
+    setSelectedSubmission(submission);
+  };
 
   return (
     <>
@@ -133,7 +165,16 @@ export function CompanySubmissionsPanel({
               {submissions.map((s) => (
                 <li
                   key={s.id}
-                  className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-3 text-left transition-colors hover:border-zinc-700/90"
+                  className="cursor-pointer rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-3 text-left transition-colors hover:border-zinc-700/90 hover:bg-zinc-950/70"
+                  onClick={() => handleOpenSubmission(s)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleOpenSubmission(s);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="space-y-1">
@@ -172,6 +213,23 @@ export function CompanySubmissionsPanel({
                         dateStyle: "medium"
                       })}
                     </time>
+                    <Button
+                      type="button"
+                      variant={s.hasUpvoted ? "secondary" : "ghost"}
+                      size="sm"
+                      className={cn("ml-auto h-7 gap-1.5 px-2 text-[11px]", s.hasUpvoted && "text-zinc-100")}
+                      isLoading={voteMutation.isPending && voteMutation.variables?.submissionId === s.id}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleVote(s.id);
+                      }}
+                    >
+                      <ArrowBigUp
+                        className={cn("h-3.5 w-3.5", s.hasUpvoted && "fill-current")}
+                        aria-hidden
+                      />
+                      {s.totalVotes}
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -210,6 +268,15 @@ export function CompanySubmissionsPanel({
         onSubmit={handleAdd}
         companyName={companyName}
         isSaving={createMutation.isPending}
+      />
+      <SubmissionRoundsDialog
+        open={selectedSubmission !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedSubmission(null);
+          }
+        }}
+        submission={selectedSubmission}
       />
     </>
   );
