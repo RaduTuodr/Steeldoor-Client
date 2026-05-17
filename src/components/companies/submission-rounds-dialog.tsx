@@ -85,7 +85,6 @@ export function SubmissionRoundsDialog({
       <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-cyan-300" />
             Interview rounds
           </DialogTitle>
           <DialogDescription>
@@ -121,23 +120,27 @@ export function SubmissionRoundsDialog({
             rounds.map((round) => (
               <Card
                 key={round.id}
-                className="overflow-hidden rounded-2xl border-zinc-800/80 bg-[linear-gradient(135deg,rgba(15,23,42,0.95),rgba(24,24,27,0.92))]"
+                className="overflow-hidden rounded-2xl border-zinc-800/80"
               >
                 <CardContent className="p-0">
                   <div className="border-b border-zinc-800/80 bg-zinc-950/40 px-5 py-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      
+                      <div className="space-y-2 flex-1 min-w-0">
                         <Badge className={cn("w-fit border font-medium", getRoundTypeClasses(round.roundType))}>
                           {formatRoundType(round.roundType)}
                         </Badge>
                         <div>
-                          <h3 className="text-base font-semibold text-zinc-50">{round.title}</h3>
-                          <p className="mt-1 text-sm text-zinc-400">
+                          <h3 className="text-base font-semibold text-zinc-50 Richmond">{round.title}</h3>
+                          <p className="mt-1 text-sm text-zinc-400 break-words">
                             {round.description || "No description was provided for this round yet."}
                           </p>
                         </div>
                       </div>
-                      <RoundMeta round={round} />
+                      <div className="shrink-0 sm:self-start">
+                        <RoundMeta round={round} />
+                      </div>
+
                     </div>
                   </div>
                 </CardContent>
