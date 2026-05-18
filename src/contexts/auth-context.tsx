@@ -7,6 +7,8 @@ import { authService } from "@/services/auth-service";
 import { tokenUtils } from "@/lib/token";
 import type { User, LoginCredentials, RegisterCredentials } from "@/types/auth";
 
+const SESSION_USER_KEY = "auth_user";
+
 function toSessionUser(sessionUser: { email?: string | null; name?: string | null; image?: string | null } | undefined): User | null {
   if (!sessionUser?.email) {
     return null;
@@ -18,6 +20,50 @@ function toSessionUser(sessionUser: { email?: string | null; name?: string | nul
     username: sessionUser.name?.trim() || sessionUser.email,
     createdAt: "",
   };
+}
+
+function getStoredUser(): User | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = sessionStorage.getItem(SESSION_USER_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<User>;
+    if (!parsed.id || !parsed.email || !parsed.username) {
+      return null;
+    }
+
+    return {
+      id: String(parsed.id),
+      email: String(parsed.email),
+      username: String(parsed.username),
+      createdAt: String(parsed.createdAt ?? ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function setStoredUser(user: User | null): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    if (!user) {
+      sessionStorage.removeItem(SESSION_USER_KEY);
+      return;
+    }
+
+    sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
+  } catch {
+    console.warn("Failed to persist user in session storage");
+  }
 }
 
 interface AuthContextType {
@@ -46,11 +92,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = tokenUtils.getToken();
+      const storedUser = getStoredUser();
+
       if (!storedToken || tokenUtils.isExpired(storedToken)) {
         tokenUtils.removeToken();
+        setStoredUser(null);
         setToken(null);
         setLocalUser(null);
         setIsBootstrappingLocal(false);
+        return;
+      }
+
+      if (storedUser) {
+        setToken(storedToken);
+        setIsBootstrappingLocal(false);
+        setLocalUser(storedUser);
         return;
       }
 
@@ -58,8 +114,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentUser = await authService.getCurrentUser();
         setToken(storedToken);
         setLocalUser(currentUser);
+        setStoredUser(currentUser);
       } catch {
         tokenUtils.removeToken();
+        setStoredUser(null);
         setToken(null);
         setLocalUser(null);
       } finally {
@@ -73,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (credentials: LoginCredentials) => {
     const response = await authService.login(credentials);
     tokenUtils.setToken(response.token);
+    setStoredUser(response.user);
     setToken(response.token);
     setLocalUser(response.user);
     return response.user;
@@ -84,6 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     tokenUtils.removeToken();
+    setStoredUser(null);
     setToken(null);
     setLocalUser(null);
     await signOut({ redirect: false });
@@ -92,12 +152,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setAuth = useCallback((newUser: User, newToken: string) => {
     tokenUtils.setToken(newToken);
+    setStoredUser(newUser);
     setToken(newToken);
     setLocalUser(newUser);
   }, []);
 
   const clearAuth = useCallback(() => {
     tokenUtils.removeToken();
+    setStoredUser(null);
     setToken(null);
     setLocalUser(null);
   }, []);

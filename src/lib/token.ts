@@ -1,87 +1,69 @@
-/**
- * JWT Token management utilities
- */
-
 const TOKEN_KEY = "auth_token";
 
-/**
- * Token storage and retrieval utilities
- */
 export const tokenUtils = {
-  /**
-   * Retrieves the JWT token from localStorage
-   * @returns Token string or null if not found
-   */
+  normalizeJwtPayload(payload: string): string {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padding = normalized.length % 4;
+
+    if (padding === 0) {
+      return normalized;
+    }
+
+    return normalized.padEnd(normalized.length + (4 - padding), "=");
+  },
+
   getToken(): string | null {
     if (typeof window === 'undefined') {
       return null;
     }
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return sessionStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(TOKEN_KEY);
     } catch {
-      console.warn("Failed to access localStorage for token retrieval");
+      console.warn("Failed to access browser storage for token retrieval");
       return null;
     }
   },
 
-  /**
-   * Stores the JWT token in localStorage
-   * @param token - Token to store
-   */
   setToken(token: string): void {
     if (typeof window === 'undefined') {
       return;
     }
     try {
-      localStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.setItem(TOKEN_KEY, token);
+      localStorage.removeItem(TOKEN_KEY);
     } catch {
-      console.warn("Failed to store token in localStorage");
+      console.warn("Failed to store token in browser session storage");
     }
   },
 
-  /**
-   * Removes the JWT token from localStorage
-   */
   removeToken(): void {
     if (typeof window === 'undefined') {
       return;
     }
     try {
+      sessionStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(TOKEN_KEY);
     } catch {
-      console.warn("Failed to remove token from localStorage");
+      console.warn("Failed to remove token from browser storage");
     }
   },
 
-  /**
-   * Checks if a valid token exists
-   * @returns True if token exists and is non-empty
-   */
   hasToken(): boolean {
     const token = this.getToken();
     return !!token?.trim();
   },
 
-  /**
-   * Decodes a JWT token payload (without verification)
-   * @param token - JWT token to decode
-   * @returns Decoded payload or null if invalid
-   */
   decodeToken(token: string): Record<string, unknown> | null {
     try {
       const parts = token.split(".");
       if (parts.length !== 3) return null;
-      const payload = parts[1];
+      const payload = tokenUtils.normalizeJwtPayload(parts[1]);
       return JSON.parse(atob(payload));
     } catch {
       return null;
     }
   },
 
-  /**
-   * Checks if a token is expired
-   * @returns True if token is expired or exp claim is missing
-   */
   isExpired(token?: string | null): boolean {
     const value = token ?? tokenUtils.getToken();
     if (!value) return true;
@@ -92,10 +74,6 @@ export const tokenUtils = {
     return currentTime >= expirationTime;
   },
 
-  /**
-   * Gets the token expiration time
-   * @returns Expiration timestamp in milliseconds or null
-   */
   getTokenExpiration(token?: string | null): number | null {
     const value = token ?? tokenUtils.getToken();
     if (!value) return null;

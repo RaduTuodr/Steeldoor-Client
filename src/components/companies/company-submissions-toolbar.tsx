@@ -28,7 +28,7 @@ const OFFER_OPTIONS: { value: string; label: string }[] = [
   { value: "true", label: "Offer received" }
 ];
 
-const PAGE_SIZES = [10, 20, 50] as const;
+const PAGE_SIZES = [3, 5, 10] as const;
 
 interface CompanySubmissionsToolbarProps {
   searchInput: string;
