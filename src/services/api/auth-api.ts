@@ -12,7 +12,6 @@ import type {
 const AUTH_ENDPOINTS = {
   login: "/api/auth/login",
   register: "/api/auth/register",
-  me: "/api/auth/me",
   refresh: "/api/auth/refresh",
   logout: "/api/auth/logout",
   passwordRequest: "/api/auth/password/request",
@@ -26,8 +25,10 @@ export const authApi = {
   register(payload: RegisterCredentials) {
     return apiClient.post<AuthResponse>(AUTH_ENDPOINTS.register, payload);
   },
-  me() {
-    return apiClient.get<{ user: User } | AuthResponse>(AUTH_ENDPOINTS.me);
+  getUser(userId: string | number) {
+    return apiClient.get<{ user: User } | AuthResponse>(
+      `/api/auth/${encodeURIComponent(String(userId))}`
+    );
   },
   refresh() {
     return apiClient.post<AuthResponse>(AUTH_ENDPOINTS.refresh);

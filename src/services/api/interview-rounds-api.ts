@@ -1,6 +1,8 @@
 import { apiClient } from "@/services/api/client";
 import type { InterviewRound } from "@/types/interview-round";
 
+const ROUND_API_BASE = "/api/round";
+
 function isRecord(payload: unknown): payload is Record<string, unknown> {
   return typeof payload === "object" && payload !== null;
 }
@@ -29,7 +31,7 @@ function normalizeInterviewRound(payload: unknown): InterviewRound | null {
 }
 
 export async function fetchInterviewRoundsBySubmissionId(submissionId: string | number): Promise<InterviewRound[]> {
-  const { data } = await apiClient.get("/api/round", {
+  const { data } = await apiClient.get(ROUND_API_BASE, {
     params: {
       submissionId: Number(submissionId),
     },
@@ -44,4 +46,11 @@ export async function fetchInterviewRoundsBySubmissionId(submissionId: string | 
     .map(normalizeInterviewRound)
     .filter((round): round is InterviewRound => round !== null)
     .sort((a, b) => a.orderIndex - b.orderIndex);
+}
+
+export async function updateInterviewRoundOrderIndex(roundId: string | number, newOrderIndex: number): Promise<InterviewRound | null> {
+  const { data } = await apiClient.post(`${ROUND_API_BASE}/${encodeURIComponent(String(roundId))}/order/${encodeURIComponent(String(newOrderIndex))}`);
+
+  const payload = isRecord(data) && data.success ? data.data : data;
+  return normalizeInterviewRound(payload);
 }

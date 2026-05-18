@@ -2,21 +2,26 @@
 
 import { cn } from "@/lib/utils";
 
+import { useState } from "react";
+
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowBigUp, Star, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OwnSubmissionRoundsDialog } from "@/components/companies/own-submission-rounds-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-context";
 import { useToggleSubmissionVoteMutation } from "@/hooks/use-company-submissions-query";
 import { fetchUserSubmissions } from "@/services/api/company-submissions-api";
-import type { CompanySubmissionListResult } from "@/types/company-submission";
+import type { CompanySubmissionListResult, CompanySubmission } from "@/types/company-submission";
 
 export function HomeOverview() {
   const { user } = useAuth();
   const voteMutation = useToggleSubmissionVoteMutation();
+
+  const [selectedSubmission, setSelectedSubmission] = useState<CompanySubmission | null>(null);
 
   const { data, isPending: isLoading } = useQuery<CompanySubmissionListResult>({
     queryKey: ["user-submissions", user?.id],
@@ -34,6 +39,10 @@ export function HomeOverview() {
   const handleVote = async (submissionId: string) => {
     if (!user?.id) return;
     await voteMutation.mutateAsync({ userId: user.id, submissionId });
+  };
+
+  const handleOpenSubmission = (submission: CompanySubmission) => {
+    setSelectedSubmission(submission);
   };
 
   return (
@@ -65,60 +74,77 @@ export function HomeOverview() {
               </div>
             ) : (
               <ul className="space-y-3">
-                {recentReviews.map((review) => (
-                  <li key={review.id} className="rounded-xl border border-zinc-800/80 bg-zinc-950/50 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-zinc-100">{review.company.name}</p>
-                        <p className="mt-1 text-sm text-zinc-400">{review.position}</p>
-                      </div>
-                      <Badge variant="secondary" className="text-xs uppercase tracking-[0.18em]">
-                        {review.offerReceived ? "Offer" : "No offer"}
-                      </Badge>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-                      <span className="inline-flex items-center gap-1.5">
-                        <User className="h-3.5 w-3.5 text-zinc-500" aria-hidden />
-                        {review.user?.username || "You"}
-                      </span>
+                {recentReviews.map((s) => (
+                <li
+                  key={s.id}
+                  className="cursor-pointer rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-3 text-left transition-colors hover:border-zinc-700/90 hover:bg-zinc-950/70"
+                  onClick={() => handleOpenSubmission(s)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleOpenSubmission(s);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-zinc-100">{s.position}</p>
                       <div className="flex items-center gap-2">
-                        <div className="flex gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={cn(
-                                "h-3 w-3", 
-                                i < review.overallDifficulty ? "fill-yellow-500 text-yellow-500" : "text-zinc-700"
-                              )} 
-                            />
-                          ))}
-                        </div>
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Difficulty</span>
+                         <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i} 
+                                className={cn(
+                                  "h-3 w-3", 
+                                  i < s.overallDifficulty ? "fill-yellow-500 text-yellow-500" : "text-zinc-700"
+                                )} 
+                              />
+                            ))}
+                         </div>
+                         <span className="text-[10px] text-zinc-500 uppercase">Difficulty</span>
                       </div>
-                      <time className="text-zinc-500" dateTime={review.createdAt}>
-                        {new Date(review.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
-                      </time>
-                      <Button
-                        type="button"
-                        variant={review.hasUpvoted ? "secondary" : "ghost"}
-                        size="sm"
-                        className={cn(
-                          "ml-auto h-7 gap-1.5 px-2 text-[11px]",
-                          review.hasUpvoted && "text-zinc-100"
-                        )}
-                        isLoading={voteMutation.isPending && voteMutation.variables?.submissionId === review.id}
-                        onClick={() => handleVote(review.id)}
-                      >
-                        <ArrowBigUp
-                          className={cn("h-3.5 w-3.5", review.hasUpvoted && "fill-current")}
-                          aria-hidden
-                        />
-                        {review.totalVotes}
-                      </Button>
                     </div>
-                  </li>
-                ))}
+                    <Badge 
+                      variant={s.offerReceived ? "default" : "secondary"} 
+                      className="shrink-0 font-normal"
+                    >
+                      {s.offerReceived ? "Offer Received" : "No Offer"}
+                    </Badge>
+                  </div>
+                  
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500">
+                    <span className="inline-flex items-center gap-1.5 text-zinc-400">
+                      <User className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+                      <span className="truncate">{s.user?.username || "Anonymous"}</span>
+                    </span>
+                    <span className="text-zinc-600">·</span>
+                    <time dateTime={s.createdAt}>
+                      {new Date(s.createdAt).toLocaleDateString(undefined, {
+                        dateStyle: "medium"
+                      })}
+                    </time>
+                    <Button
+                      type="button"
+                      variant={s.hasUpvoted ? "secondary" : "ghost"}
+                      size="sm"
+                      className={cn("ml-auto h-7 gap-1.5 px-2 text-[11px]", s.hasUpvoted && "text-zinc-100")}
+                      isLoading={voteMutation.isPending && voteMutation.variables?.submissionId === s.id}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleVote(s.id);
+                      }}
+                    >
+                      <ArrowBigUp
+                        className={cn("h-3.5 w-3.5", s.hasUpvoted && "fill-current")}
+                        aria-hidden
+                      />
+                      {s.totalVotes}
+                    </Button>
+                  </div>
+                </li>
+              ))}
               </ul>
             )
           ) : (
@@ -128,6 +154,17 @@ export function HomeOverview() {
               <p className="mt-1">Your saved company review activity appears here.</p>
             </div>
           )}
+
+          <OwnSubmissionRoundsDialog
+            open={selectedSubmission !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelectedSubmission(null);
+              }
+            }}
+            submission={selectedSubmission}
+          />
+
         </CardContent>
       </Card>
     </div>

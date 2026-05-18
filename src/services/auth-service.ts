@@ -1,4 +1,5 @@
 import { authApi } from "@/services/api/auth-api";
+import { tokenUtils } from "@/lib/token";
 import type {
   AuthResponse,
   LoginCredentials,
@@ -12,6 +13,30 @@ function toApiUserId(id: string): number | string {
     return Number(trimmed);
   }
   return trimmed;
+}
+
+function extractUserIdFromToken(token?: string | null): string | null {
+  const value = token ?? tokenUtils.getToken();
+  if (!value) {
+    return null;
+  }
+
+  const decoded = tokenUtils.decodeToken(value);
+  if (!decoded) {
+    return null;
+  }
+
+  const candidates = [decoded.userId, decoded.id, decoded.sub];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      return String(candidate);
+    }
+  }
+
+  return null;
 }
 
 function normalizeUser(payload: unknown): User | null {
@@ -63,8 +88,14 @@ class AuthService {
     await authApi.logout();
   }
 
-  async getCurrentUser(): Promise<User> {
-    const data = (await authApi.me()).data;
+  async getCurrentUser(userId?: string): Promise<User> {
+    const resolvedUserId = userId?.trim() || extractUserIdFromToken();
+
+    if (!resolvedUserId) {
+      throw new Error("Could not determine the current user id.");
+    }
+
+    const data = (await authApi.getUser(toApiUserId(resolvedUserId))).data;
     const user = normalizeUser(data);
 
     if (!user) {

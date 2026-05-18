@@ -125,7 +125,6 @@ export function SubmissionRoundsDialog({
                 <CardContent className="p-0">
                   <div className="border-b border-zinc-800/80 bg-zinc-950/40 px-5 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                      
                       <div className="space-y-2 flex-1 min-w-0">
                         <Badge className={cn("w-fit border font-medium", getRoundTypeClasses(round.roundType))}>
                           {formatRoundType(round.roundType)}
@@ -140,7 +139,6 @@ export function SubmissionRoundsDialog({
                       <div className="shrink-0 sm:self-start">
                         <RoundMeta round={round} />
                       </div>
-
                     </div>
                   </div>
                 </CardContent>
