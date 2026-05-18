@@ -52,7 +52,7 @@ function normalizeSubmission(payload: unknown): CompanySubmission | null {
     user: submission.user as User,
     position,
     offerReceived: Boolean(submission.offerReceived),
-    overallDifficulty: Number(submission.overallDifficulty || 0),
+    rating: Number(submission.rating ?? submission.overallDifficulty ?? 0),
     totalVotes: readVoteCount(voteSource),
     hasUpvoted: Boolean(voteSource.hasUpvoted),
     createdAt: String(submission.createdAt ?? new Date().toISOString()),
@@ -127,7 +127,7 @@ export async function createCompanySubmission(
   const payloadData = {
     userId: payload.userId,
     position: payload.position.trim(),
-    overallDifficulty: payload.overallDifficulty,
+    rating: payload.rating,
     offerReceived: payload.offerReceived,
     createdAt: payload.createdAt,
   };

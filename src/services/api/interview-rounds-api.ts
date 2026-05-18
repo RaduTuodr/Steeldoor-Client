@@ -1,5 +1,6 @@
 import { apiClient } from "@/services/api/client";
 import type { InterviewRound } from "@/types/interview-round";
+import type { CreateInterviewRoundPayload } from "@/types/company-submission";
 
 const ROUND_API_BASE = "/api/round";
 
@@ -53,4 +54,23 @@ export async function updateInterviewRoundOrderIndex(roundId: string | number, n
 
   const payload = isRecord(data) && data.success ? data.data : data;
   return normalizeInterviewRound(payload);
+}
+
+export async function createInterviewRound(payload: CreateInterviewRoundPayload): Promise<InterviewRound> {
+  const { data } = await apiClient.post(ROUND_API_BASE, {
+    submissionId: payload.submissionId,
+    orderIndex: payload.orderIndex,
+    roundType: payload.roundType.trim(),
+    title: payload.title.trim(),
+    description: payload.description?.trim() || null,
+    difficulty: payload.difficulty ?? null,
+    durationMinutes: payload.durationMinutes ?? null,
+  });
+
+  const created = normalizeInterviewRound(isRecord(data) && data.success ? data.data : data);
+  if (!created) {
+    throw new Error("Server returned an empty interview round payload.");
+  }
+
+  return created;
 }

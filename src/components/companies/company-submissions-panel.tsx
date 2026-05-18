@@ -9,6 +9,7 @@ import {
   useCreateCompanySubmissionMutation,
   useToggleSubmissionVoteMutation,
 } from "@/hooks/use-company-submissions-query";
+import { useCreateInterviewRoundsMutation } from "@/hooks/use-interview-rounds-query";
 import { defaultCompanySubmissionListParams } from "@/lib/default-company-submission-params";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export function CompanySubmissionsPanel({
     queryParams
   );
   const createMutation = useCreateCompanySubmissionMutation(companySlug);
+  const createRoundsMutation = useCreateInterviewRoundsMutation();
   const voteMutation = useToggleSubmissionVoteMutation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -63,16 +65,36 @@ export function CompanySubmissionsPanel({
 
   const handleAdd = async (values: CompanySubmissionFormValues) => {
     try {
-      await createMutation.mutateAsync({
+      const createdSubmission = await createMutation.mutateAsync({
         position: values.position.trim(),
-        overallDifficulty: values.overallDifficulty,
+        rating: values.rating,
         offerReceived: values.offerReceived,
         userId: values.userId ?? user?.id ?? "",
         createdAt: new Date().toISOString(),
       });
+
+      const rounds = values.rounds
+        .map((round, index) => ({
+          submissionId: Number(createdSubmission.id),
+          orderIndex: index + 1,
+          roundType: round.roundType.trim(),
+          title: round.title.trim(),
+          description: round.description?.trim() || null,
+          difficulty: round.difficulty ?? null,
+          durationMinutes: round.durationMinutes ?? null,
+        }))
+        .filter((round) => round.roundType.length > 0 && round.title.length > 0);
+
+      if (rounds.length > 0) {
+        await createRoundsMutation.mutateAsync(rounds);
+      }
+
       toast({
-        title: "Submission saved",
-        description: "Your interview experience has been shared.",
+        title: rounds.length > 0 ? "Submission and rounds saved" : "Submission saved",
+        description:
+          rounds.length > 0
+            ? `Your interview experience and ${rounds.length} round${rounds.length === 1 ? "" : "s"} have been shared.`
+            : "Your interview experience has been shared.",
         variant: "success",
       });
       setDialogOpen(false);
@@ -186,12 +208,12 @@ export function CompanySubmissionsPanel({
                                 key={i} 
                                 className={cn(
                                   "h-3 w-3", 
-                                  i < s.overallDifficulty ? "fill-yellow-500 text-yellow-500" : "text-zinc-700"
+                                  i < s.rating ? "fill-yellow-500 text-yellow-500" : "text-zinc-700"
                                 )} 
                               />
                             ))}
                          </div>
-                         <span className="text-[10px] text-zinc-500 uppercase">Difficulty</span>
+                         <span className="text-[10px] text-zinc-500 uppercase">Rating</span>
                       </div>
                     </div>
                     <Badge 
@@ -267,7 +289,7 @@ export function CompanySubmissionsPanel({
         onOpenChange={setDialogOpen}
         onSubmit={handleAdd}
         companyName={companyName}
-        isSaving={createMutation.isPending}
+        isSaving={createMutation.isPending || createRoundsMutation.isPending}
       />
       <SubmissionRoundsDialog
         open={selectedSubmission !== null}

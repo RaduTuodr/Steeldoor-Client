@@ -98,12 +98,12 @@ export function HomeOverview() {
                                 key={i} 
                                 className={cn(
                                   "h-3 w-3", 
-                                  i < s.overallDifficulty ? "fill-yellow-500 text-yellow-500" : "text-zinc-700"
+                                  i < s.rating ? "fill-yellow-500 text-yellow-500" : "text-zinc-700"
                                 )} 
                               />
                             ))}
                          </div>
-                         <span className="text-[10px] text-zinc-500 uppercase">Difficulty</span>
+                         <span className="text-[10px] text-zinc-500 uppercase">Rating</span>
                       </div>
                     </div>
                     <Badge 

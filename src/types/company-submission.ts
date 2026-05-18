@@ -13,7 +13,7 @@ export interface CompanySubmission {
   user: User;
   position: string;
   offerReceived: boolean;
-  overallDifficulty: number;
+  rating: number;
   totalVotes: number;
   hasUpvoted: boolean;
   createdAt: string;
@@ -41,9 +41,19 @@ export interface CompanySubmissionListResult {
 export interface CreateCompanySubmissionPayload {
   userId: string;
   position: string;
-  overallDifficulty: number;
+  rating: number;
   offerReceived: boolean;
   createdAt: string;
+}
+
+export interface CreateInterviewRoundPayload {
+  submissionId: number;
+  orderIndex: number;
+  roundType: string;
+  title: string;
+  description?: string | null;
+  difficulty?: number | null;
+  durationMinutes?: number | null;
 }
 
 export interface SubmissionVotePayload {
