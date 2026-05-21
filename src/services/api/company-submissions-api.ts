@@ -51,6 +51,7 @@ function normalizeSubmission(payload: unknown): CompanySubmission | null {
     company: submission.company as Company,
     user: submission.user as User,
     position,
+    searchVector: typeof submission.searchVector === "string" ? submission.searchVector : undefined,
     offerReceived: Boolean(submission.offerReceived),
     rating: Number(submission.rating ?? submission.overallDifficulty ?? 0),
     totalVotes: readVoteCount(voteSource),
@@ -94,6 +95,25 @@ function unwrapSingleSubmission(payload: unknown): CompanySubmission | null {
   return normalizeSubmission(data);
 }
 
+function matchesCreatedSubmission(
+  submission: CompanySubmission,
+  payload: CreateCompanySubmissionPayload
+): boolean {
+  const normalizedPosition = payload.position.trim().toLowerCase();
+  const createdAtMs = new Date(payload.createdAt).getTime();
+  const submissionCreatedAtMs = new Date(submission.createdAt).getTime();
+
+  return (
+    submission.user?.id === payload.userId &&
+    submission.position.trim().toLowerCase() === normalizedPosition &&
+    submission.offerReceived === payload.offerReceived &&
+    submission.rating === payload.rating &&
+    Number.isFinite(createdAtMs) &&
+    Number.isFinite(submissionCreatedAtMs) &&
+    Math.abs(submissionCreatedAtMs - createdAtMs) < 60_000
+  );
+}
+
 export async function fetchCompanySubmissionsFilter(
   companySlug: string,
   params: CompanySubmissionListParams
@@ -123,7 +143,6 @@ export async function createCompanySubmission(
   companySlug: string,
   payload: CreateCompanySubmissionPayload
 ): Promise<CompanySubmission> {
-
   const payloadData = {
     userId: payload.userId,
     position: payload.position.trim(),
@@ -132,16 +151,30 @@ export async function createCompanySubmission(
     createdAt: payload.createdAt,
   };
 
-  const { data } = await apiClient.post<CompanySubmission | ApiResponse<CompanySubmission>>(
-    `${COMPANY_API_BASE}/${encodeURIComponent(companySlug)}/submissions`,
-    payloadData
-  );
+  try {
+    const { data } = await apiClient.post<CompanySubmission | ApiResponse<CompanySubmission>>(
+      `${COMPANY_API_BASE}/${encodeURIComponent(companySlug)}/submissions`,
+      payloadData
+    );
 
-  const created = unwrapSingleSubmission(data);
-  if (!created) {
-    throw new Error("Server returned an empty submission payload.");
+    const created = unwrapSingleSubmission(data);
+    if (!created) {
+      throw new Error("Server returned an empty submission payload.");
+    }
+
+    return created;
+  } catch (error) {
+    const fallback = await fetchUserSubmissions(payload.userId);
+    const created = fallback.submissions.find((submission) =>
+      matchesCreatedSubmission(submission, payload)
+    );
+
+    if (created) {
+      return created;
+    }
+
+    throw error;
   }
-  return created;
 }
 
 function unwrapVotePayload(payload: unknown): SubmissionVoteResult {

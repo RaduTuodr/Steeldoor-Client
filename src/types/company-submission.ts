@@ -12,6 +12,7 @@ export interface CompanySubmission {
   company: Company;
   user: User;
   position: string;
+  searchVector?: string;
   offerReceived: boolean;
   rating: number;
   totalVotes: number;
@@ -41,6 +42,7 @@ export interface CompanySubmissionListResult {
 export interface CreateCompanySubmissionPayload {
   userId: string;
   position: string;
+  searchVector?: string;
   rating: number;
   offerReceived: boolean;
   createdAt: string;
