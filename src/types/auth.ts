@@ -14,6 +14,8 @@ export interface User {
   email: string;
   /** Timestamp of account creation */
   createdAt: string;
+  /** Optional normalized role when exposed by the backend or token */
+  role?: string;
 }
 
 /**

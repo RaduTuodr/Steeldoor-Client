@@ -11,6 +11,53 @@ import { localizeHref } from "@/i18n/routing";
 
 const SESSION_USER_KEY = "auth_user";
 
+function getRoleFromStoredValue(value: unknown): string | undefined {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
+  }
+
+  if (Array.isArray(value)) {
+    for (const role of value) {
+      if (typeof role === "string" && role.trim().length > 0) {
+        return role.trim();
+      }
+
+      if (role && typeof role === "object") {
+        const authority = (role as { authority?: unknown }).authority;
+        if (typeof authority === "string" && authority.trim().length > 0) {
+          return authority.trim();
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  if (value && typeof value === "object") {
+    const authority = (value as { authority?: unknown }).authority;
+    if (typeof authority === "string" && authority.trim().length > 0) {
+      return authority.trim();
+    }
+  }
+
+  return undefined;
+}
+
+function getRoleFromToken(): string | undefined {
+  const decoded = tokenUtils.decodeToken(tokenUtils.getToken() ?? "");
+  if (!decoded) {
+    return undefined;
+  }
+
+  return (
+    getRoleFromStoredValue(decoded.role) ??
+    getRoleFromStoredValue(decoded.roles) ??
+    getRoleFromStoredValue(decoded.authorities) ??
+    getRoleFromStoredValue(decoded.authority) ??
+    getRoleFromStoredValue(decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"])
+  );
+}
+
 function toSessionUser(sessionUser: { email?: string | null; name?: string | null; image?: string | null } | undefined): User | null {
   if (!sessionUser?.email) {
     return null;
@@ -45,6 +92,10 @@ function getStoredUser(): User | null {
       email: String(parsed.email),
       username: String(parsed.username),
       createdAt: String(parsed.createdAt ?? ""),
+      role:
+        getRoleFromStoredValue(parsed.role) ??
+        getRoleFromStoredValue((parsed as { roles?: unknown }).roles) ??
+        getRoleFromToken(),
     };
   } catch {
     return null;

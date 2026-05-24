@@ -32,6 +32,10 @@ function createApiClient(): AxiosInstance {
       if (token) {
         config.headers.set("Authorization", `Bearer ${token}`);
       }
+      if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+        // Let the browser provide the multipart boundary for file uploads.
+        config.headers.delete("Content-Type");
+      }
       return config;
     },
     (error) => Promise.reject(error)

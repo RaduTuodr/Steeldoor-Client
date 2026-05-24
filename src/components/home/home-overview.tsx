@@ -12,6 +12,7 @@ import { OwnSubmissionRoundsDialog } from "@/components/companies/own-submission
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreateCompanyPanel } from "@/components/companies/create-company-panel";
 import { useAuth } from "@/contexts/auth-context";
 import { useToggleSubmissionVoteMutation } from "@/hooks/use-company-submissions-query";
 import { fetchUserSubmissions } from "@/services/api/company-submissions-api";
@@ -37,6 +38,9 @@ export function HomeOverview() {
   const reviewCount = reviews.length;
   const showSkeleton = isLoading && reviewCount === 0;
   const recentReviews = reviews.slice(0, 3);
+  const isAdmin =
+    user?.role?.trim().toUpperCase() === "ADMIN" ||
+    user?.role?.trim().toUpperCase() === "ROLE_ADMIN";
 
   const handleVote = async (submissionId: string) => {
     if (!user?.id) return;
@@ -49,6 +53,7 @@ export function HomeOverview() {
 
   return (
     <div className="space-y-6">
+      {isAdmin ? <CreateCompanyPanel /> : null}
 
       <Card className="border-zinc-800/80 bg-zinc-900/35">
         <CardHeader className="flex flex-wrap items-start justify-between gap-4 pb-4">

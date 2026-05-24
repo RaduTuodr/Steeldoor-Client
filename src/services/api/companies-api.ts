@@ -1,6 +1,6 @@
 import { apiClient } from "@/services/api/client";
 import type { ApiResponse } from "@/types/api";
-import type { Company, CompanyListParams } from "@/types/company";
+import type { Company, CompanyListParams, CreateCompanyPayload } from "@/types/company";
 
 function normalizeCompanySize(value: unknown): Company["size"] {
   if (value === "STARTUP" || value === "SMB" || value === "MID_MARKET" || value === "ENTERPRISE") {
@@ -35,6 +35,7 @@ function normalizeCompany(payload: unknown, index = 0): Company | null {
         : `${name.toLowerCase().replace(/\s+/g, "-")}-${index}`,
     name,
     logoUrl: typeof candidate.logoUrl === "string" ? candidate.logoUrl : null,
+    website: typeof candidate.website === "string" ? candidate.website : null,
     description:
       typeof candidate.description === "string" && candidate.description.trim()
         ? candidate.description.trim()
@@ -83,6 +84,36 @@ function unwrapCompanyResponse(
   return normalizeCompany(payload);
 }
 
+function createUploadClient() {
+  return apiClient;
+}
+
+function extractUploadUrl(payload: unknown): string {
+  if (typeof payload === "string") {
+    return payload;
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const candidate = payload as Record<string, unknown>;
+
+  if (typeof candidate.data === "string") {
+    return candidate.data;
+  }
+
+  if (typeof candidate.url === "string") {
+    return candidate.url;
+  }
+
+  if (typeof candidate.secure_url === "string") {
+    return candidate.secure_url;
+  }
+
+  return "";
+}
+
 export async function fetchCompanies(params: CompanyListParams): Promise<Company[]> {
   const { data } = await apiClient.post<Company[] | ApiResponse<Company[]>>("/api/company/filter", {
     query: params.search.trim() || null,
@@ -108,6 +139,30 @@ export async function fetchCompanyBySlug(slug: string): Promise<Company | null> 
     }
     throw error;
   }
+}
+
+export async function uploadCompanyPhoto(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await createUploadClient().post("/photo/upload", formData);
+
+  return extractUploadUrl(data);
+}
+
+export async function createCompany(payload: CreateCompanyPayload): Promise<Company | null> {
+  const body = {
+    ...payload,
+    website: payload.website.trim(),
+    logoUrl: payload.logoUrl?.trim() || null,
+    name: payload.name.trim(),
+    description: payload.description.trim(),
+    industry: payload.industry.trim(),
+    location: payload.location.trim(),
+  };
+
+  const { data } = await apiClient.post<Company | ApiResponse<Company>>("/api/company", body);
+  return unwrapCompanyResponse(data);
 }
 
 export function getDistinctIndustries(companies: Company[]) {

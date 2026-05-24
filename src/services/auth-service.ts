@@ -7,6 +7,66 @@ import type {
   User,
 } from "@/types/auth";
 
+function normalizeRole(candidate: unknown): string | undefined {
+  if (Array.isArray(candidate)) {
+    for (const value of candidate) {
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
+      if (value && typeof value === "object") {
+        const authority = (value as { authority?: unknown }).authority;
+        if (typeof authority === "string" && authority.trim()) {
+          return authority.trim();
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  if (typeof candidate === "string" && candidate.trim()) {
+    return candidate.trim();
+  }
+
+  if (candidate && typeof candidate === "object") {
+    const authority = (candidate as { authority?: unknown }).authority;
+    if (typeof authority === "string" && authority.trim()) {
+      return authority.trim();
+    }
+  }
+
+  return undefined;
+}
+
+function extractRoleFromToken(token?: string | null): string | undefined {
+  const value = token ?? tokenUtils.getToken();
+  if (!value) {
+    return undefined;
+  }
+
+  const decoded = tokenUtils.decodeToken(value);
+  if (!decoded) {
+    return undefined;
+  }
+
+  const candidates = [
+    decoded.role,
+    decoded.roles,
+    decoded.authorities,
+    decoded.authority,
+    decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
+  ];
+
+  for (const candidate of candidates) {
+    const role = normalizeRole(candidate);
+    if (role) {
+      return role;
+    }
+  }
+
+  return undefined;
+}
+
 function toApiUserId(id: string): number | string {
   const trimmed = id.trim();
   if (/^\d+$/.test(trimmed)) {
@@ -44,18 +104,34 @@ function normalizeUser(payload: unknown): User | null {
     return null;
   }
 
-  const candidate = payload as Partial<User> & { user?: Partial<User> };
+  const candidate = payload as Partial<User> & {
+    user?: Partial<User>;
+    role?: unknown;
+    roles?: unknown;
+    authorities?: unknown;
+  };
   const source = candidate.user && typeof candidate.user === "object" ? candidate.user : candidate;
 
   if (!source.id || !source.email) {
     return null;
   }
 
+  const role =
+    normalizeRole(
+    (source as { roles?: unknown; authorities?: unknown; role?: unknown }).roles ??
+      (source as { authorities?: unknown }).authorities ??
+      (source as { role?: unknown }).role ??
+      candidate.roles ??
+      candidate.authorities ??
+      candidate.role
+    ) ?? extractRoleFromToken();
+
   return {
     id: String(source.id),
     email: String(source.email),
     username: String(source.username ?? source.email),
     createdAt: String(source.createdAt ?? ""),
+    role,
   };
 }
 
