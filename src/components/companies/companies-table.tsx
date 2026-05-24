@@ -6,6 +6,9 @@ import type { Company } from "@/types/company";
 import { companyInitials, formatCompanySize } from "@/lib/company-display";
 import { companySlug } from "@/lib/company-slug";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
+import { localizeHref } from "@/i18n/routing";
+import { useI18n } from "@/components/i18n/i18n-provider";
 
 interface CompaniesTableProps {
   companies: Company[];
@@ -13,6 +16,9 @@ interface CompaniesTableProps {
 }
 
 export function CompaniesTable({ companies, className }: CompaniesTableProps) {
+  const locale = useLocale();
+  const { dictionary } = useI18n();
+
   return (
     <div
       className={cn(
@@ -24,11 +30,11 @@ export function CompaniesTable({ companies, className }: CompaniesTableProps) {
         <table className="w-full min-w-[720px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-800 bg-zinc-950/80 text-xs font-medium uppercase tracking-wide text-zinc-500">
-              <th className="px-4 py-3">Company</th>
-              <th className="px-4 py-3">Industry</th>
-              <th className="px-4 py-3">Location</th>
-              <th className="px-4 py-3">Size</th>
-              <th className="px-4 py-3">Tags</th>
+              <th className="px-4 py-3">{dictionary.companies.company}</th>
+              <th className="px-4 py-3">{dictionary.companies.industry}</th>
+              <th className="px-4 py-3">{dictionary.companies.location}</th>
+              <th className="px-4 py-3">{dictionary.companies.size}</th>
+              <th className="px-4 py-3">{dictionary.companies.tags}</th>
             </tr>
           </thead>
           <tbody>
@@ -39,7 +45,7 @@ export function CompaniesTable({ companies, className }: CompaniesTableProps) {
               >
                 <td className="px-4 py-3">
                   <Link
-                    href={`/company/${companySlug(row.name)}`}
+                    href={localizeHref(locale, `/company/${companySlug(row.name)}`)}
                     className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                   >
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-xs font-semibold text-zinc-300">
@@ -60,14 +66,12 @@ export function CompaniesTable({ companies, className }: CompaniesTableProps) {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
-                    {row.tags.slice(0, 3).map((t) => (
-                      <Badge key={t} variant="secondary" className="text-[10px] font-normal text-zinc-500">
-                        {t}
+                    {row.tags.slice(0, 3).map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-[10px] font-normal text-zinc-500">
+                        {tag}
                       </Badge>
                     ))}
-                    {row.tags.length > 3 ? (
-                      <span className="text-xs text-zinc-600">+{row.tags.length - 3}</span>
-                    ) : null}
+                    {row.tags.length > 3 ? <span className="text-xs text-zinc-600">+{row.tags.length - 3}</span> : null}
                   </div>
                 </td>
               </tr>

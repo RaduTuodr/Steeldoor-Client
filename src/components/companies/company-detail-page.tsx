@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Building2, MapPin, Tags } from "lucide-react";
+import { ArrowLeft, Building2, MapPin } from "lucide-react";
 import { useCompanyQuery } from "@/hooks/use-company-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { companyInitials, formatCompanySize } from "@/lib/company-display";
 import { CompanySubmissionsPanel } from "@/components/companies/company-submissions-panel";
+import { useLocale } from "@/hooks/use-locale";
+import { localizeHref } from "@/i18n/routing";
+import { useI18n } from "@/components/i18n/i18n-provider";
 
 function CompanyDetailSkeleton() {
   return (
@@ -25,16 +28,17 @@ function CompanyDetailSkeleton() {
 }
 
 function CompanyNotFound() {
+  const locale = useLocale();
+  const { dictionary } = useI18n();
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-12 text-center sm:px-6">
       <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-8">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Directory</p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-50">Company not found</h1>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-          The company you were trying to open is missing or no longer available in the current dataset.
-        </p>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">{dictionary.home.directory}</p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-50">{dictionary.companies.companyNotFound}</h1>
+        <p className="mt-3 text-sm leading-relaxed text-zinc-400">{dictionary.companies.companyMissing}</p>
         <Button asChild className="mt-6">
-          <Link href="/?tab=companies">Back to companies</Link>
+          <Link href={localizeHref(locale, "/?tab=companies")}>{dictionary.companies.backToCompanies}</Link>
         </Button>
       </div>
     </div>
@@ -43,6 +47,8 @@ function CompanyNotFound() {
 
 export function CompanyDetailPage({ slug }: { slug: string }) {
   const { data: company, isPending, isError, error } = useCompanyQuery(slug);
+  const locale = useLocale();
+  const { dictionary } = useI18n();
 
   if (isPending) {
     return <CompanyDetailSkeleton />;
@@ -52,10 +58,10 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
         <div className="rounded-2xl border border-red-900/50 bg-red-950/20 p-6 text-sm text-red-200">
-          <p className="font-medium">Could not load company</p>
+          <p className="font-medium">{dictionary.companies.couldNotLoadCompany}</p>
           <p className="mt-2 text-red-300/80">{error.message}</p>
           <Button asChild variant="outline" className="mt-4 border-red-900/60 text-red-100">
-            <Link href="/?tab=companies">Back to companies</Link>
+            <Link href={localizeHref(locale, "/?tab=companies")}>{dictionary.companies.backToCompanies}</Link>
           </Button>
         </div>
       </div>
@@ -69,13 +75,13 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       <Button asChild variant="ghost" className="gap-2 px-0 text-zinc-400 hover:bg-transparent hover:text-zinc-100">
-        <Link href="/?tab=companies">
+        <Link href={localizeHref(locale, "/?tab=companies")}>
           <ArrowLeft className="h-4 w-4" />
-          Back to companies
+          {dictionary.companies.backToCompanies}
         </Link>
       </Button>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
+      <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card className="overflow-hidden border-zinc-800/80 bg-zinc-900/40">
           <CardHeader className="gap-6 border-b border-zinc-800/70 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950/80 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-4">
@@ -107,15 +113,16 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
           </CardHeader>
           <CardContent className="grid gap-6 p-6 md:grid-cols-2">
             <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/40 p-5">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Overview</p>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">{dictionary.companies.overview}</p>
               <p className="mt-3 text-sm leading-relaxed text-zinc-300">
-                {company.name} operates in {company.industry.toLowerCase()} and is currently based in{" "}
-                {company.location}. This profile is ready to be expanded with live backend fields like contacts,
-                status, revenue bands, or engagement history.
+                {dictionary.companies.overviewDescription
+                  .replace("{name}", company.name)
+                  .replace("{industry}", company.industry.toLowerCase())
+                  .replace("{location}", company.location)}
               </p>
             </div>
             <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/40 p-5">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Tags</p>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">{dictionary.companies.tags}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {company.tags.map((tag) => (
                   <Badge key={tag} variant="secondary" className="font-normal text-zinc-300">
@@ -129,12 +136,12 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
 
         <Card className="border-zinc-800/80 bg-zinc-900/35">
           <CardHeader>
-            <CardTitle className="text-lg">Company details</CardTitle>
-            <CardDescription>Current fields available in the client model.</CardDescription>
+            <CardTitle className="text-lg">{dictionary.companies.companyDetails}</CardTitle>
+            <CardDescription>{dictionary.companies.currentFields}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Industry</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{dictionary.companies.industry}</p>
               <p className="mt-1 inline-flex items-center gap-2 text-zinc-200">
                 <Building2 className="h-4 w-4 text-zinc-500" />
                 {company.industry}
@@ -142,7 +149,7 @@ export function CompanyDetailPage({ slug }: { slug: string }) {
             </div>
             <Separator className="bg-zinc-800/70" />
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Location</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{dictionary.companies.location}</p>
               <p className="mt-1 inline-flex items-center gap-2 text-zinc-200">
                 <MapPin className="h-4 w-4 text-zinc-500" />
                 {company.location}

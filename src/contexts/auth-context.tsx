@@ -6,6 +6,8 @@ import { signOut, useSession } from "next-auth/react";
 import { authService } from "@/services/auth-service";
 import { tokenUtils } from "@/lib/token";
 import type { User, LoginCredentials, RegisterCredentials } from "@/types/auth";
+import { useLocale } from "@/hooks/use-locale";
+import { localizeHref } from "@/i18n/routing";
 
 const SESSION_USER_KEY = "auth_user";
 
@@ -85,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isBootstrappingLocal, setIsBootstrappingLocal] = useState(true);
   const router = useRouter();
+  const locale = useLocale();
   const { data: session, status: sessionStatus } = useSession();
   const sessionUser = toSessionUser(session?.user);
   const user = localUser ?? sessionUser;
@@ -147,8 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setLocalUser(null);
     await signOut({ redirect: false });
-    router.replace("/login");
-  }, [router]);
+    router.replace(localizeHref(locale, "/login"));
+  }, [router, locale]);
 
   const setAuth = useCallback((newUser: User, newToken: string) => {
     tokenUtils.setToken(newToken);

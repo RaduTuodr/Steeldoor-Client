@@ -18,10 +18,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AuthInput } from "@/components/auth/auth-input";
+import { useI18n } from "@/components/i18n/i18n-provider";
+import { useLocale } from "@/hooks/use-locale";
+import { localizeHref } from "@/i18n/routing";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
   const { user, isBootstrapping, isAuthenticated } = useAuth();
+  const { dictionary } = useI18n();
+  const locale = useLocale();
   const [phoneNumber, setPhoneNumber] = React.useState("+40");
   const [codeSent, setCodeSent] = React.useState(false);
   const [sendError, setSendError] = React.useState<string | null>(null);
@@ -52,7 +57,7 @@ export default function ResetPasswordPage() {
 
     const parsed = passwordResetPhoneSchema.safeParse(phoneNumber);
     if (!parsed.success) {
-      setSendError(parsed.error.issues[0]?.message ?? "Invalid phone number");
+      setSendError(parsed.error.issues[0]?.message ?? dictionary.resetPassword.invalidPhone);
       return;
     }
 
@@ -61,15 +66,15 @@ export default function ResetPasswordPage() {
       await authService.requestPasswordChange(user.id, parsed.data);
       setCodeSent(true);
       toast({
-        title: "Code sent",
-        description: "Check your phone for the SMS verification code.",
+        title: dictionary.resetPassword.codeSent,
+        description: dictionary.resetPassword.checkPhone,
         variant: "success",
       });
     } catch (error) {
       setSendError(
         error instanceof Error
           ? error.message
-          : "Could not send the verification code. Try again."
+          : dictionary.resetPassword.codeSendFailed
       );
     } finally {
       setIsSending(false);
@@ -85,18 +90,18 @@ export default function ResetPasswordPage() {
       await authService.confirmPasswordChange(user.id, data.code, data.newPassword);
       resetConfirmForm();
       toast({
-        title: "Password updated",
-        description: "Your password has been changed successfully.",
+        title: dictionary.resetPassword.passwordUpdated,
+        description: dictionary.resetPassword.passwordUpdatedDescription,
         variant: "success",
       });
-      router.push("/profile");
+      router.push(localizeHref(locale, "/profile"));
     } catch (error) {
       toast({
-        title: "Could not reset password",
+        title: dictionary.resetPassword.resetFailed,
         description:
           error instanceof Error
             ? error.message
-            : "The code may be wrong or expired. Request a new code and try again.",
+            : dictionary.resetPassword.resetFailedDescription,
         variant: "destructive",
       });
     }
@@ -117,22 +122,19 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Reset password</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">{dictionary.resetPassword.title}</h1>
 
       <Card className="mt-8 border-zinc-800/80 bg-zinc-900/40">
         <CardHeader>
-          <CardTitle>SMS verification</CardTitle>
-          <CardDescription>
-            We send a code to your phone. Enter it below with your new password. Codes expire after a few
-            minutes.
-          </CardDescription>
+          <CardTitle>{dictionary.resetPassword.verificationTitle}</CardTitle>
+          <CardDescription>{dictionary.resetPassword.verificationDescription}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <AuthInput
               id="reset-phone"
               name="phone"
-              label="Phone number"
+              label={dictionary.resetPassword.phoneNumber}
               type="tel"
               autoComplete="tel"
               placeholder="+40 7xx xxx xxx"
@@ -153,7 +155,7 @@ export default function ResetPasswordPage() {
               isLoading={isSending}
               disabled={isSending}
             >
-              {codeSent ? "Resend SMS code" : "Send SMS code"}
+              {codeSent ? dictionary.resetPassword.resendSmsCode : dictionary.resetPassword.sendSmsCode}
             </Button>
           </div>
 
@@ -161,30 +163,30 @@ export default function ResetPasswordPage() {
             <AuthInput
               {...register("code")}
               id="reset-code"
-              label="SMS code"
+              label={dictionary.resetPassword.smsCode}
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="Enter the code"
+              placeholder={dictionary.resetPassword.enterCode}
               error={errors.code?.message}
               disabled={isSubmitting}
             />
             <AuthInput
               {...register("newPassword")}
               id="reset-new-password"
-              label="New password"
+              label={dictionary.resetPassword.newPassword}
               type="password"
               autoComplete="new-password"
-              placeholder="Create a strong password"
+              placeholder={dictionary.auth.newPasswordPlaceholder}
               error={errors.newPassword?.message}
               disabled={isSubmitting}
             />
             <AuthInput
               {...register("confirmPassword")}
               id="reset-confirm-password"
-              label="Confirm new password"
+              label={dictionary.resetPassword.confirmNewPassword}
               type="password"
               autoComplete="new-password"
-              placeholder="Repeat your new password"
+              placeholder={dictionary.resetPassword.repeatNewPassword}
               error={errors.confirmPassword?.message}
               disabled={isSubmitting}
             />
@@ -196,10 +198,10 @@ export default function ResetPasswordPage() {
                 isLoading={isSubmitting}
                 disabled={isSubmitting}
               >
-                Update password
+                {dictionary.resetPassword.updatePassword}
               </Button>
               <Button type="button" variant="ghost" asChild>
-                <Link href="/profile">Back to profile</Link>
+                <Link href={localizeHref(locale, "/profile")}>{dictionary.resetPassword.backToProfile}</Link>
               </Button>
             </div>
           </form>

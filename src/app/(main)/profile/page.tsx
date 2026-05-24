@@ -5,9 +5,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useI18n } from "@/components/i18n/i18n-provider";
 
 export default function ProfilePage() {
   const { user, isBootstrapping, isAuthenticated } = useAuth();
+  const { dictionary, locale } = useI18n();
   useProtectedRoute();
 
   if (isBootstrapping) {
@@ -25,7 +27,7 @@ export default function ProfilePage() {
 
   const date = new Date(user.createdAt);
   const day = date.getDate();
-  const month = date.toLocaleString('en-US', { month: 'short' });
+  const month = date.toLocaleString(locale, { month: "short" });
   const year = date.getFullYear();
 
   const suffix = (day : number) => {
@@ -42,26 +44,26 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Profile</h1>
-      <p className="mt-2 text-sm text-zinc-500">Account details from your registration.</p>
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">{dictionary.profile.title}</h1>
+      <p className="mt-2 text-sm text-zinc-500">{dictionary.profile.description}</p>
 
       <Card className="mt-8 border-zinc-800/80 bg-zinc-900/40">
         <CardHeader>
-          <CardTitle>Account</CardTitle>
+          <CardTitle>{dictionary.profile.account}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Username</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{dictionary.profile.username}</p>
             <p className="mt-1 text-zinc-100">{user.username}</p>
           </div>
           <Separator />
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Email</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{dictionary.profile.email}</p>
             <p className="mt-1 text-zinc-100">{user.email}</p>
           </div>
           <Separator />
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Member since</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{dictionary.profile.memberSince}</p>
             <p className="mt-1 text-zinc-100">{formattedDate}</p>
           </div>
         </CardContent>

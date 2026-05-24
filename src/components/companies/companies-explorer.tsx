@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useCompaniesQuery } from "@/hooks/use-companies-query";
 import { defaultCompanyListParams } from "@/lib/default-company-params";
 import type { CompanyListParams } from "@/types/company";
@@ -12,9 +12,10 @@ import { CompaniesEmptyState } from "@/components/companies/companies-empty-stat
 import { CompaniesSkeletonGrid } from "@/components/companies/companies-skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useEffect } from "react";
+import { useI18n } from "@/components/i18n/i18n-provider";
 
 export function CompaniesExplorer() {
+  const { dictionary } = useI18n();
   const [params, setParams] = useState<CompanyListParams>(defaultCompanyListParams);
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput);
@@ -24,10 +25,17 @@ export function CompaniesExplorer() {
   );
 
   const [viewMode, setViewMode] = useState<CompaniesViewMode>("grid");
-  const { data, isPending, isFetching, isError, error, refetch, isPlaceholderData } = useCompaniesQuery(queryParams);
+  const {
+    data,
+    isPending,
+    isFetching,
+    isError,
+    error,
+    refetch,
+    isPlaceholderData,
+  } = useCompaniesQuery(queryParams);
   const { data: allCompanies } = useCompaniesQuery(defaultCompanyListParams);
 
-  // Ensure list is always an array and filter out invalid items
   const list = Array.isArray(data) ? data.filter(Boolean) : [];
   const industries = useMemo(() => getDistinctIndustries(allCompanies ?? []), [allCompanies]);
   const locations = useMemo(() => getDistinctLocations(allCompanies ?? []), [allCompanies]);
@@ -38,7 +46,7 @@ export function CompaniesExplorer() {
     if (data) {
       console.log("Filtered Companies Result:", data);
     }
-  }, [data]); // This triggers every time 'data' updates
+  }, [data]);
 
   const resetAll = () => {
     setParams(defaultCompanyListParams);
@@ -64,13 +72,13 @@ export function CompaniesExplorer() {
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-zinc-500">
         <p>
           {showSkeleton ? (
-            "Loading directory…"
+            dictionary.companies.loadingDirectory
           ) : (
             <>
               <span className="font-medium text-zinc-300">{list.length}</span>{" "}
-              {list.length === 1 ? "company" : "companies"}
-              {isFetching ? <span className="ml-2 text-zinc-600">Updating…</span> : null}
-              {isStaleSearch ? <span className="ml-2 text-zinc-600">Matching…</span> : null}
+              {list.length === 1 ? dictionary.companies.companySingular : dictionary.companies.companyPlural}
+              {isFetching ? <span className="ml-2 text-zinc-600">{dictionary.companies.updating}</span> : null}
+              {isStaleSearch ? <span className="ml-2 text-zinc-600">{dictionary.companies.matching}</span> : null}
             </>
           )}
         </p>
@@ -78,24 +86,29 @@ export function CompaniesExplorer() {
 
       {isError ? (
         <div className="rounded-xl border border-red-900/50 bg-red-950/20 px-4 py-6 text-sm text-red-200">
-          <p className="font-medium">Could not load companies</p>
+          <p className="font-medium">{dictionary.companies.couldNotLoadCompanies}</p>
           <p className="mt-1 text-red-300/80">{error.message}</p>
           <Button variant="outline" className="mt-4 border-red-900/60 text-red-100" onClick={() => refetch()}>
-            Retry
+            {dictionary.companies.retry}
           </Button>
         </div>
       ) : showSkeleton ? (
         <CompaniesSkeletonGrid />
       ) : list.length === 0 ? (
         <CompaniesEmptyState
-          variant={queryParams.search || params.industry !== "all" || params.location !== "all" || params.size !== "all" ? "no-results" : "empty"}
+          variant={
+            queryParams.search ||
+            params.industry !== "all" ||
+            params.location !== "all" ||
+            params.size !== "all"
+              ? "no-results"
+              : "empty"
+          }
           onReset={resetAll}
         />
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {list.map((company) => (
-            company?.id ? <CompanyCard key={company.id} company={company} /> : null
-          ))}
+          {list.map((company) => (company?.id ? <CompanyCard key={company.id} company={company} /> : null))}
         </div>
       ) : (
         <CompaniesTable companies={list} />

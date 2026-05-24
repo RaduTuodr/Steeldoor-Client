@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useI18n } from "@/components/i18n/i18n-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { companyInitials } from "@/lib/company-display";
+import { useLocale } from "@/hooks/use-locale";
+import { localizeHref, swapLocale } from "@/i18n/routing";
 
 const subscribe = () => () => {};
 
@@ -54,39 +57,65 @@ export function AppNavbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, isAuthenticated, isBootstrapping, logout } = useAuth();
+  const { dictionary } = useI18n();
+  const locale = useLocale();
   const isMounted = useSyncExternalStore(subscribe, () => true, () => false);
 
-  const onHome = pathname === "/";
+  const onHome = pathname === `/${locale}`;
   const tab = isMounted ? searchParams.get("tab") : null;
   const overviewActive = isMounted && onHome && tab === "overview";
   const companiesActive =
     isMounted && onHome && (tab === "companies" || tab === null || tab === "");
+  const localeSearch = searchParams.toString();
+  const currentPathWithSearch = localeSearch ? `${pathname}?${localeSearch}` : pathname;
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl">
       <div className="mx-auto grid h-14 w-full max-w-[1400px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-4 sm:px-6">
           <div className="flex min-w-0 justify-start">
             <Link
-              href="/"
+              href={localizeHref(locale, "/")}
               className="group flex shrink-0 items-center gap-2 font-semibold tracking-tight text-zinc-100 transition-opacity hover:opacity-90"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 text-xs font-bold text-zinc-100 shadow-inner shadow-black/20 transition-transform duration-200 group-hover:scale-[1.02]">
                 SD
               </span>
-              <span className="hidden truncate sm:inline">Steeldoor</span>
+              <span className="hidden truncate sm:inline">{dictionary.navbar.brand}</span>
             </Link>
           </div>
 
           <nav className="flex items-center justify-center gap-1 rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-0.5" aria-label="Primary">
-            <NavTab href="/?tab=overview" active={overviewActive}>
-              Overview
+            <NavTab href={localizeHref(locale, "/?tab=overview")} active={overviewActive}>
+              {dictionary.navbar.overview}
             </NavTab>
-            <NavTab href="/?tab=companies" active={companiesActive}>
-              Companies
+            <NavTab href={localizeHref(locale, "/?tab=companies")} active={companiesActive}>
+              {dictionary.navbar.companies}
             </NavTab>
           </nav>
 
           <div className="flex min-w-0 justify-end gap-2 sm:gap-3">
+          <div className="hidden items-center gap-1 rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-0.5 sm:flex">
+            <Button
+              asChild
+              variant={locale === "en" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8 px-2"
+            >
+              <Link href={swapLocale(currentPathWithSearch, "en")}>
+                {dictionary.navbar.english}
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant={locale === "ro" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8 px-2"
+            >
+              <Link href={swapLocale(currentPathWithSearch, "ro")}>
+                {dictionary.navbar.romanian}
+              </Link>
+            </Button>
+          </div>
           {!isMounted || isBootstrapping ? (
             <div className="h-9 w-24 animate-pulse rounded-lg bg-zinc-800/60" aria-hidden />
           ) : isAuthenticated && user ? (
@@ -116,15 +145,15 @@ export function AppNavbar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/profile" className="cursor-pointer gap-2">
+                  <Link href={localizeHref(locale, "/profile")} className="cursor-pointer gap-2">
                     <User className="h-4 w-4" />
-                    Profile
+                    {dictionary.navbar.profile}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/reset-password" className="cursor-pointer gap-2">
+                  <Link href={localizeHref(locale, "/reset-password")} className="cursor-pointer gap-2">
                     <KeyRound className="h-4 w-4" />
-                    Reset Password
+                    {dictionary.navbar.resetPassword}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -133,17 +162,17 @@ export function AppNavbar() {
                   onSelect={() => void logout()}
                 >
                   <LogOut className="h-4 w-4" />
-                  Logout
+                  {dictionary.navbar.logout}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <>
               <Button variant="ghost" size="sm" className="text-zinc-300" asChild>
-                <Link href="/login">Sign In</Link>
+                <Link href={localizeHref(locale, "/login")}>{dictionary.navbar.signIn}</Link>
               </Button>
               <Button size="sm" className="rounded-lg" asChild>
-                <Link href="/register">Register</Link>
+                <Link href={localizeHref(locale, "/register")}>{dictionary.navbar.register}</Link>
               </Button>
             </>
           )}

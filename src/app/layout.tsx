@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
@@ -7,6 +8,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { NextAuthSessionProvider } from "@/components/providers/session-provider";
 import { AppShell } from "@/components/layout/app-shell";
+import { getValidLocale, localeCookieName } from "@/i18n/config";
+import { I18nProvider } from "@/components/i18n/i18n-provider";
+import { getDictionary } from "@/i18n/get-dictionary";
 
 export const metadata: Metadata = {
   title: {
@@ -22,21 +26,30 @@ function NavbarFallback() {
   );
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const locale = getValidLocale(cookieStore.get(localeCookieName)?.value);
+  
+  // Fetch the localization dictionary server-side using the resolved locale
+  const dictionary = await getDictionary(locale);
+
   return (
-    <html lang="en" className="h-full">
+    <html lang={locale} className="h-full">
       <body className="h-full bg-zinc-950 text-zinc-100 antialiased">
         <NextAuthSessionProvider>
           <QueryProvider>
             <AuthProvider>
               <ToastProvider>
-                <Suspense fallback={<NavbarFallback />}>
-                  <AppShell>{children}</AppShell>
-                </Suspense>
+                {/* Fixed the typo from </I18NProvider> to </I18nProvider> and added props */}
+                <I18nProvider dictionary={dictionary} locale={locale}>
+                  <Suspense fallback={<NavbarFallback />}>
+                    <AppShell>{children}</AppShell>
+                  </Suspense>
+                </I18nProvider>
                 <Toaster />
               </ToastProvider>
             </AuthProvider>

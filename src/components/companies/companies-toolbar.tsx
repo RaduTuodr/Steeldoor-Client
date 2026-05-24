@@ -15,15 +15,9 @@ import type { CompanyListParams, CompanySortField } from "@/types/company";
 import { formatCompanySize } from "@/lib/company-display";
 import type { CompanySize } from "@/types/company";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n/i18n-provider";
 
 const SIZES: CompanySize[] = ["STARTUP", "SMB", "MID_MARKET", "ENTERPRISE"];
-
-const SORT_OPTIONS: { value: CompanySortField; label: string }[] = [
-  { value: "name", label: "Name" },
-  { value: "industry", label: "Industry" },
-  { value: "location", label: "Location" },
-  { value: "size", label: "Company size" },
-];
 
 export type CompaniesViewMode = "grid" | "table";
 
@@ -54,6 +48,14 @@ export function CompaniesToolbar({
 }: CompaniesToolbarProps) {
   const uniqueIndustries = useMemo(() => Array.from(new Set(industries)), [industries]);
   const uniqueLocations = useMemo(() => Array.from(new Set(locations)), [locations]);
+  const { dictionary } = useI18n();
+
+  const sortOptions: { value: CompanySortField; label: string }[] = [
+    { value: "name", label: dictionary.companies.sortName },
+    { value: "industry", label: dictionary.companies.sortIndustry },
+    { value: "location", label: dictionary.companies.sortLocation },
+    { value: "size", label: dictionary.companies.sortSize },
+  ];
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -63,9 +65,9 @@ export function CompaniesToolbar({
           <Input
             value={searchInput}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search companies, industries, tags…"
+            placeholder={dictionary.companies.searchPlaceholder}
             className="rounded-lg border-zinc-800 bg-zinc-950/60 pl-9 ring-offset-zinc-950"
-            aria-label="Search companies"
+            aria-label={dictionary.companies.searchAria}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -78,7 +80,7 @@ export function CompaniesToolbar({
               onClick={() => onViewModeChange("grid")}
             >
               <LayoutGrid className="h-4 w-4" />
-              Grid
+              {dictionary.companies.grid}
             </Button>
             <Button
               type="button"
@@ -88,102 +90,100 @@ export function CompaniesToolbar({
               onClick={() => onViewModeChange("table")}
             >
               <Table2 className="h-4 w-4" />
-              Table
+              {dictionary.companies.table}
             </Button>
           </div>
           <Button type="button" variant="outline" size="sm" className="h-8" onClick={onResetFilters}>
-            Reset
+            {dictionary.companies.reset}
           </Button>
         </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-zinc-500">Industry</label>
+          <label className="text-xs font-medium text-zinc-500">{dictionary.companies.industry}</label>
           <Select
             value={params.industry}
             onValueChange={(industry) => onParamsChange({ ...params, industry })}
           >
             <SelectTrigger className="rounded-lg border-zinc-800 bg-zinc-950/60">
-              <SelectValue placeholder="Industry" />
+              <SelectValue placeholder={dictionary.companies.industry} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All industries</SelectItem>
-              {uniqueIndustries.map((i) => (
-                <SelectItem key={i} value={i}>
-                  {i}
+              <SelectItem value="all">{dictionary.companies.allIndustries}</SelectItem>
+              {uniqueIndustries.map((industry) => (
+                <SelectItem key={industry} value={industry}>
+                  {industry}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-zinc-500">Location</label>
+          <label className="text-xs font-medium text-zinc-500">{dictionary.companies.location}</label>
           <Select
             value={params.location}
             onValueChange={(location) => onParamsChange({ ...params, location })}
           >
             <SelectTrigger className="rounded-lg border-zinc-800 bg-zinc-950/60">
-              <SelectValue placeholder="Location" />
+              <SelectValue placeholder={dictionary.companies.location} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All locations</SelectItem>
-              {uniqueLocations.map((l) => (
-                <SelectItem key={l} value={l}>
-                  {l}
+              <SelectItem value="all">{dictionary.companies.allLocations}</SelectItem>
+              {uniqueLocations.map((location) => (
+                <SelectItem key={location} value={location}>
+                  {location}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-zinc-500">Size</label>
+          <label className="text-xs font-medium text-zinc-500">{dictionary.companies.size}</label>
           <Select value={params.size} onValueChange={(size) => onParamsChange({ ...params, size })}>
             <SelectTrigger className="rounded-lg border-zinc-800 bg-zinc-950/60">
-              <SelectValue placeholder="Size" />
+              <SelectValue placeholder={dictionary.companies.size} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All sizes</SelectItem>
-              {SIZES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {formatCompanySize(s)}
+              <SelectItem value="all">{dictionary.companies.allSizes}</SelectItem>
+              {SIZES.map((size) => (
+                <SelectItem key={size} value={size}>
+                  {formatCompanySize(size)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-zinc-500">Sort by</label>
+          <label className="text-xs font-medium text-zinc-500">{dictionary.companies.sortBy}</label>
           <Select
             value={params.sortBy}
-            onValueChange={(sortBy) =>
-              onParamsChange({ ...params, sortBy: sortBy as CompanySortField })
-            }
+            onValueChange={(sortBy) => onParamsChange({ ...params, sortBy: sortBy as CompanySortField })}
           >
             <SelectTrigger className="rounded-lg border-zinc-800 bg-zinc-950/60">
-              <SelectValue placeholder="Sort" />
+              <SelectValue placeholder={dictionary.companies.sortBy} />
             </SelectTrigger>
             <SelectContent>
-              {SORT_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-zinc-500">Direction</label>
+          <label className="text-xs font-medium text-zinc-500">{dictionary.companies.direction}</label>
           <Select
             value={params.sortDir}
             onValueChange={(sortDir) => onParamsChange({ ...params, sortDir: sortDir as "asc" | "desc" })}
           >
             <SelectTrigger className="rounded-lg border-zinc-800 bg-zinc-950/60">
-              <SelectValue placeholder="Direction" />
+              <SelectValue placeholder={dictionary.companies.direction} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="asc">Ascending</SelectItem>
-              <SelectItem value="desc">Descending</SelectItem>
+              <SelectItem value="asc">{dictionary.companies.ascending}</SelectItem>
+              <SelectItem value="desc">{dictionary.companies.descending}</SelectItem>
             </SelectContent>
           </Select>
         </div>

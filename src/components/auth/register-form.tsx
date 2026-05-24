@@ -9,6 +9,9 @@ import { useGuestRoute } from "@/hooks/use-protected-route";
 import { toast } from "@/hooks/use-toast";
 import { registerSchema, type RegisterFormValues } from "@/lib/validation/auth";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/i18n/i18n-provider";
+import { useLocale } from "@/hooks/use-locale";
+import { localizeHref } from "@/i18n/routing";
 import { AuthInput } from "./auth-input";
 import { OAuthButtons } from "./oauth-buttons";
 
@@ -23,6 +26,8 @@ export function RegisterForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const { register: registerUser } = useAuth();
   const router = useRouter();
+  const { dictionary } = useI18n();
+  const locale = useLocale();
 
   useGuestRoute();
 
@@ -41,16 +46,16 @@ export function RegisterForm() {
     try {
       await registerUser(data);
       toast({
-        title: "Account created",
-        description: "You can sign in with your new credentials now.",
+        title: dictionary.auth.accountCreated,
+        description: dictionary.auth.accountCreatedDescription,
         variant: "success",
       });
-      router.push("/login");
+      router.push(localizeHref(locale, "/login"));
     } catch (error) {
       setServerError(
         error instanceof Error
           ? error.message
-          : "Registration failed. Please try again."
+          : dictionary.auth.registrationFailed
       );
     }
   };
@@ -60,21 +65,21 @@ export function RegisterForm() {
       <AuthInput
         {...register(FIELD_NAMES.username)}
         id={FIELD_NAMES.username}
-        label="Username"
+        label={dictionary.auth.username}
         type="text"
-        placeholder="Choose a username"
+        placeholder={dictionary.auth.usernamePlaceholder}
         autoComplete="username"
         error={errors.username?.message}
         disabled={isSubmitting}
-        helperText="3-24 characters, letters, numbers, underscores, and hyphens only"
+        helperText={dictionary.auth.usernameHelper}
       />
 
       <AuthInput
         {...register(FIELD_NAMES.email)}
         id={FIELD_NAMES.email}
-        label="Email"
+        label={dictionary.auth.email}
         type="email"
-        placeholder="you@example.com"
+        placeholder={dictionary.auth.emailPlaceholder}
         autoComplete="email"
         error={errors.email?.message}
         disabled={isSubmitting}
@@ -83,21 +88,21 @@ export function RegisterForm() {
       <AuthInput
         {...register(FIELD_NAMES.password)}
         id={FIELD_NAMES.password}
-        label="Password"
+        label={dictionary.auth.password}
         type="password"
-        placeholder="Create a strong password"
+        placeholder={dictionary.auth.newPasswordPlaceholder}
         autoComplete="new-password"
         error={errors.password?.message}
         disabled={isSubmitting}
-        helperText="At least 8 characters with uppercase, lowercase, and number"
+        helperText={dictionary.auth.passwordHelper}
       />
 
       <AuthInput
         {...register(FIELD_NAMES.confirmPassword)}
         id={FIELD_NAMES.confirmPassword}
-        label="Confirm Password"
+        label={dictionary.auth.confirmPassword}
         type="password"
-        placeholder="Confirm your password"
+        placeholder={dictionary.auth.confirmPasswordPlaceholder}
         autoComplete="new-password"
         error={errors.confirmPassword?.message}
         disabled={isSubmitting}
@@ -118,7 +123,7 @@ export function RegisterForm() {
         isLoading={isSubmitting}
         disabled={isSubmitting}
       >
-        Create account
+        {dictionary.auth.createAccountButton}
       </Button>
 
       <OAuthButtons />

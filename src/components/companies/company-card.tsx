@@ -8,6 +8,8 @@ import type { Company } from "@/types/company";
 import { cn } from "@/lib/utils";
 import { companyInitials, formatCompanySize } from "@/lib/company-display";
 import { companySlug } from "@/lib/company-slug";
+import { useLocale } from "@/hooks/use-locale";
+import { localizeHref } from "@/i18n/routing";
 
 interface CompanyCardProps {
   company: Company;
@@ -15,9 +17,11 @@ interface CompanyCardProps {
 }
 
 export function CompanyCard({ company, className }: CompanyCardProps) {
+  const locale = useLocale();
+
   return (
     <Link
-      href={`/company/${companySlug(company.name)}`}
+      href={localizeHref(locale, `/company/${companySlug(company.name)}`)}
       className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
     >
       <Card

@@ -16,10 +16,12 @@ import { useAuth } from "@/contexts/auth-context";
 import { useToggleSubmissionVoteMutation } from "@/hooks/use-company-submissions-query";
 import { fetchUserSubmissions } from "@/services/api/company-submissions-api";
 import type { CompanySubmissionListResult, CompanySubmission } from "@/types/company-submission";
+import { useI18n } from "@/components/i18n/i18n-provider";
 
 export function HomeOverview() {
   const { user } = useAuth();
   const voteMutation = useToggleSubmissionVoteMutation();
+  const { dictionary } = useI18n();
 
   const [selectedSubmission, setSelectedSubmission] = useState<CompanySubmission | null>(null);
 
@@ -51,11 +53,11 @@ export function HomeOverview() {
       <Card className="border-zinc-800/80 bg-zinc-900/35">
         <CardHeader className="flex flex-wrap items-start justify-between gap-4 pb-4">
           <div>
-            <CardTitle className="text-base text-zinc-100">Your review activity</CardTitle>
-            <p className="mt-1 text-sm text-zinc-400">A quick view of reviews you&apos;ve submitted across companies.</p>
+            <CardTitle className="text-base text-zinc-100">{dictionary.home.reviewActivity}</CardTitle>
+            <p className="mt-1 text-sm text-zinc-400">{dictionary.home.reviewActivityDescription}</p>
           </div>
           <Badge variant="outline" className="font-normal text-zinc-300">
-            {user ? `${reviewCount} submitted` : "Not signed in"}
+            {user ? dictionary.home.submitted.replace("{count}", String(reviewCount)) : dictionary.home.notSignedIn}
           </Badge>
         </CardHeader>
         <CardContent>
@@ -69,8 +71,8 @@ export function HomeOverview() {
             ) : reviews.length === 0 ? (
               <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/20 px-6 py-8 text-center text-sm text-zinc-400">
                 <User className="mx-auto h-8 w-8 text-zinc-500" />
-                <p className="mt-3 font-medium text-zinc-100">No reviews found</p>
-                <p className="mt-1">Submit a review from a company page to see it here.</p>
+                <p className="mt-3 font-medium text-zinc-100">{dictionary.home.noReviewsFound}</p>
+                <p className="mt-1">{dictionary.home.submitReviewHint}</p>
               </div>
             ) : (
               <ul className="space-y-3">
@@ -103,21 +105,21 @@ export function HomeOverview() {
                               />
                             ))}
                          </div>
-                         <span className="text-[10px] text-zinc-500 uppercase">Rating</span>
+                         <span className="text-[10px] text-zinc-500 uppercase">{dictionary.home.rating}</span>
                       </div>
                     </div>
                     <Badge 
                       variant={s.offerReceived ? "default" : "secondary"} 
                       className="shrink-0 font-normal"
                     >
-                      {s.offerReceived ? "Offer Received" : "No Offer"}
+                      {s.offerReceived ? dictionary.home.offerReceived : dictionary.home.noOffer}
                     </Badge>
                   </div>
                   
                   <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500">
                     <span className="inline-flex items-center gap-1.5 text-zinc-400">
                       <User className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
-                      <span className="truncate">{s.user?.username || "Anonymous"}</span>
+                      <span className="truncate">{s.user?.username || dictionary.home.anonymous}</span>
                     </span>
                     <span className="text-zinc-600">·</span>
                     <time dateTime={s.createdAt}>
@@ -150,8 +152,8 @@ export function HomeOverview() {
           ) : (
             <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/20 px-6 py-8 text-center text-sm text-zinc-400">
               <User className="mx-auto h-8 w-8 text-zinc-500" />
-              <p className="mt-3 font-medium text-zinc-100">Sign in to see your review history</p>
-              <p className="mt-1">Your saved company review activity appears here.</p>
+              <p className="mt-3 font-medium text-zinc-100">{dictionary.home.signInToSeeReviews}</p>
+              <p className="mt-1">{dictionary.home.savedReviewActivity}</p>
             </div>
           )}
 

@@ -9,6 +9,7 @@ import { useGuestRoute } from "@/hooks/use-protected-route";
 import { toast } from "@/hooks/use-toast";
 import { loginSchema, type LoginFormValues } from "@/lib/validation/auth";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/i18n/i18n-provider";
 import { AuthInput } from "./auth-input";
 import { OAuthButtons } from "./oauth-buttons";
 
@@ -22,6 +23,7 @@ export function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { dictionary } = useI18n();
   const redirectUrl = searchParams.get("redirect") || "/";
 
   useGuestRoute();
@@ -41,8 +43,8 @@ export function LoginForm() {
     try {
       const user = await login(data);
       toast({
-        title: "Signed in",
-        description: `Welcome back, ${user.username || user.email}.`,
+        title: dictionary.auth.signedIn,
+        description: dictionary.auth.welcomeBack.replace("{name}", user.username || user.email),
         variant: "success",
       });
       router.push(redirectUrl);
@@ -50,7 +52,7 @@ export function LoginForm() {
       setServerError(
         error instanceof Error
           ? error.message
-          : "Login failed. Check your credentials and try again."
+          : dictionary.auth.loginFailed
       );
     }
   };
@@ -60,9 +62,9 @@ export function LoginForm() {
       <AuthInput
         {...register(FIELD_NAMES.email)}
         id={FIELD_NAMES.email}
-        label="Email"
+        label={dictionary.auth.email}
         type="email"
-        placeholder="you@example.com"
+        placeholder={dictionary.auth.emailPlaceholder}
         autoComplete="email"
         error={errors.email?.message}
         disabled={isSubmitting}
@@ -71,9 +73,9 @@ export function LoginForm() {
       <AuthInput
         {...register(FIELD_NAMES.password)}
         id={FIELD_NAMES.password}
-        label="Password"
+        label={dictionary.auth.password}
         type="password"
-        placeholder="Enter your password"
+        placeholder={dictionary.auth.passwordPlaceholder}
         autoComplete="current-password"
         error={errors.password?.message}
         disabled={isSubmitting}
@@ -94,7 +96,7 @@ export function LoginForm() {
         isLoading={isSubmitting}
         disabled={isSubmitting}
       >
-        Sign in
+        {dictionary.auth.signInButton}
       </Button>
 
       <OAuthButtons />
@@ -104,7 +106,7 @@ export function LoginForm() {
           href="#"
           className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors duration-200"
         >
-          Forgot your password?
+          {dictionary.auth.forgotPassword}
         </a>
       </div>
     </form>
