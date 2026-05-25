@@ -118,7 +118,7 @@
     "backToCompanies": "Back to companies",
     "couldNotLoadCompany": "Could not load company",
     "overview": "Overview",
-    "overviewDescription": "{name} operates in {industry} and is currently based in {location}. This profile is ready to be expanded with live backend fields like contacts, status, revenue bands, or engagement history.",
+    "overviewDescription": "{name} operates in {industry} and is currently based in {location}.",
     "companyDetails": "Company details",
     "currentFields": "Current fields available in the client model."
   },
